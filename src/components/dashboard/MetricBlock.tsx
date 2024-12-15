@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, BarChart3, Users, Clock, Eye, ArrowUpRight } from 'lucide-react';
+import { Search, BarChart3, Users, Clock, Eye, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { SparklineChart } from '../metrics/SparklineChart';
 
 type MetricType = 'clicks' | 'impressions' | 'users' | 'pageViews' | 'duration' | 'bounce';
@@ -23,7 +23,7 @@ interface MetricBlockProps {
   type: MetricType;
   value: string | number;
   sparklineData?: number[];
-  trend?: 'up' | 'down';
+  trend?: number;
   trendValue?: string;
 }
 
@@ -31,11 +31,12 @@ export const MetricBlock: React.FC<MetricBlockProps> = ({
   type,
   value, 
   sparklineData,
-  trend,
+  trend = 0,
   trendValue
 }) => {
   const config = metricConfigs[type];
   const Icon = config.icon;
+  const isPositiveTrend = trend >= 0;
 
   return (
     <div className="relative bg-[#1a1b1e]/50 rounded-lg p-3 border border-gray-800/10 overflow-hidden group 
@@ -48,11 +49,15 @@ export const MetricBlock: React.FC<MetricBlockProps> = ({
               {config.label}
             </span>
           </div>
-          {trend && trendValue && (
-            <span className={`text-xs ${trend === 'up' ? 'text-green-500' : 'text-red-500'} flex items-center gap-1`}>
-              <ArrowUpRight className={`w-3 h-3 ${trend === 'down' ? 'rotate-90' : ''}`} />
-              {trendValue}
-            </span>
+          {trendValue && (
+            <div className={`flex items-center gap-1 ${isPositiveTrend ? 'text-green-500' : 'text-red-500'}`}>
+              {isPositiveTrend ? (
+                <ArrowUpRight className="w-3 h-3" />
+              ) : (
+                <ArrowDownRight className="w-3 h-3" />
+              )}
+              <span className="text-xs font-medium">{trendValue}</span>
+            </div>
           )}
         </div>
         <div className="text-lg font-semibold text-white mt-1">

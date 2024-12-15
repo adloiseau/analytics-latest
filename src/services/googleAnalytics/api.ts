@@ -12,7 +12,10 @@ export const analyticsApi = {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+            dateRanges: [
+              { startDate: '7daysAgo', endDate: 'today' },
+              { startDate: '14daysAgo', endDate: '8daysAgo' }
+            ],
             metrics: [
               { name: 'activeUsers' },
               { name: 'screenPageViews' },
@@ -24,16 +27,24 @@ export const analyticsApi = {
       );
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error?.message || `HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
+      const currentPeriod = data.rows?.[0]?.metricValues;
+      const previousPeriod = data.rows?.[1]?.metricValues;
+
       return {
-        activeUsers: parseInt(data.rows?.[0]?.metricValues?.[0]?.value || '0'),
-        pageViews: parseInt(data.rows?.[0]?.metricValues?.[1]?.value || '0'),
-        avgSessionDuration: parseFloat(data.rows?.[0]?.metricValues?.[2]?.value || '0'),
-        bounceRate: parseFloat(data.rows?.[0]?.metricValues?.[3]?.value || '0')
+        activeUsers: parseInt(currentPeriod?.[0]?.value || '0'),
+        pageViews: parseInt(currentPeriod?.[1]?.value || '0'),
+        avgSessionDuration: parseFloat(currentPeriod?.[2]?.value || '0'),
+        bounceRate: parseFloat(currentPeriod?.[3]?.value || '0'),
+        previousPeriod: {
+          activeUsers: parseInt(previousPeriod?.[0]?.value || '0'),
+          pageViews: parseInt(previousPeriod?.[1]?.value || '0'),
+          avgSessionDuration: parseFloat(previousPeriod?.[2]?.value || '0'),
+          bounceRate: parseFloat(previousPeriod?.[3]?.value || '0')
+        }
       };
     } catch (error) {
       console.error('Error fetching Google Analytics metrics data:', error);
@@ -52,24 +63,22 @@ export const analyticsApi = {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            metrics: [{ name: 'activeUsers' }],
-            minuteRanges: [{ 
-              name: 'last29Minutes',
-              startMinutesAgo: 29,
-              endMinutesAgo: 0
-            }]
+            metrics: [
+              { name: 'activeUsers' }
+            ]
           })
         }
       );
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error?.message || `HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
+      const activeUsers = parseInt(data.rows?.[0]?.metricValues?.[0]?.value || '0');
+
       return {
-        activeUsers: parseInt(data.rows?.[0]?.metricValues?.[0]?.value || '0'),
+        activeUsers,
         pageViews: 0,
         avgSessionDuration: 0,
         bounceRate: 0

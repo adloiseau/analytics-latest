@@ -14,4 +14,10 @@ export interface RealTimeMetrics {
   pageViews: number;
   avgSessionDuration: number;
   bounceRate: number;
+  previousPeriod?: {
+    activeUsers: number;
+    pageViews: number;
+    avgSessionDuration: number;
+    bounceRate: number;
+  };
 }

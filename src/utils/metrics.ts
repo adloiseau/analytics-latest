@@ -54,3 +54,8 @@ export const validateUrl = (url: string): boolean => {
     return false;
   }
 };
+
+export const calculateTrend = (current: number, previous: number): number => {
+  if (previous === 0) return 0;
+  return ((current - previous) / previous) * 100;
+};

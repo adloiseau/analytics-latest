@@ -2,9 +2,24 @@ import React from 'react';
 import { useSearchConsoleData } from '../hooks/useSearchConsoleData';
 import { Layout } from '../components/Layout';
 import { SiteMetricsRow } from '../components/dashboard/SiteMetricsRow';
+import { useFilters } from '../contexts/FilterContext';
+import { getDateRange } from '../utils/dates';
+import { subDays, format } from 'date-fns';
 
 export const Dashboard = () => {
-  const { data, isLoading, error } = useSearchConsoleData('site');
+  const { dateRange } = useFilters();
+  const { startDate, endDate } = getDateRange(dateRange);
+
+  // Calculer la période précédente
+  const currentStartDate = new Date(startDate);
+  const currentEndDate = new Date(endDate);
+  const daysDiff = Math.ceil((currentEndDate.getTime() - currentStartDate.getTime()) / (1000 * 60 * 60 * 24));
+  
+  const previousStartDate = format(subDays(currentStartDate, daysDiff), 'yyyy-MM-dd');
+  const previousEndDate = format(subDays(currentEndDate, daysDiff), 'yyyy-MM-dd');
+
+  const { data: currentData, isLoading, error } = useSearchConsoleData('site');
+  const { data: previousData } = useSearchConsoleData('site', previousStartDate, previousEndDate);
 
   return (
     <Layout>
@@ -23,9 +38,18 @@ export const Dashboard = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {data?.rows?.map((site, index) => (
-              <SiteMetricsRow key={index} site={site} />
-            ))}
+            {currentData?.rows?.map((site, index) => {
+              const previousSite = previousData?.rows?.find(
+                prev => prev.keys[0] === site.keys[0]
+              );
+              return (
+                <SiteMetricsRow 
+                  key={index} 
+                  site={site} 
+                  previousPeriodData={previousSite}
+                />
+              );
+            })}
           </div>
         )}
       </div>

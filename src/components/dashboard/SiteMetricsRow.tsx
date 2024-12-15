@@ -1,7 +1,7 @@
 import React from 'react';
 import { Globe } from 'lucide-react';
 import { MetricBlock } from './MetricBlock';
-import { validateUrl } from '../../utils/metrics';
+import { validateUrl, calculateTrend } from '../../utils/metrics';
 import { useGoogleAnalytics } from '../../hooks/useGoogleAnalytics';
 import { IndexedPagesChart } from '../metrics/IndexedPagesChart';
 import { UserMetrics } from '../metrics/UserMetrics';
@@ -13,9 +13,10 @@ import { useState, useEffect } from 'react';
 
 interface SiteMetricsRowProps {
   site: SearchAnalyticsRow;
+  previousPeriodData?: SearchAnalyticsRow;
 }
 
-export const SiteMetricsRow: React.FC<SiteMetricsRowProps> = ({ site }) => {
+export const SiteMetricsRow: React.FC<SiteMetricsRowProps> = ({ site, previousPeriodData }) => {
   if (!validateUrl(site.keys[0])) return null;
 
   const hostname = new URL(site.keys[0]).hostname;
@@ -39,23 +40,11 @@ export const SiteMetricsRow: React.FC<SiteMetricsRowProps> = ({ site }) => {
     }
   }, [accessToken, site.keys[0]]);
 
-  const generateSparklineData = () => Array.from({ length: 20 }, () => Math.random() * 100);
-
-  if (loading) {
-    return (
-      <div className="animate-pulse bg-[#25262b]/50 rounded-lg p-4 border border-gray-800/10">
-        <div className="h-[160px]"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-[#25262b]/50 rounded-lg p-4 border border-gray-800/10">
-        <div className="text-red-400">{error}</div>
-      </div>
-    );
-  }
+  // Calculer les tendances
+  const clicksTrend = previousPeriodData ? calculateTrend(site.clicks, previousPeriodData.clicks) : 0;
+  const impressionsTrend = previousPeriodData ? calculateTrend(site.impressions, previousPeriodData.impressions) : 0;
+  const usersTrend = metrics?.previousPeriod ? calculateTrend(metrics.activeUsers, metrics.previousPeriod.activeUsers) : 0;
+  const pageViewsTrend = metrics?.previousPeriod ? calculateTrend(metrics.pageViews, metrics.previousPeriod.pageViews) : 0;
 
   const periodLabel = {
     '24h': 'les dernières 24h',
@@ -94,18 +83,16 @@ export const SiteMetricsRow: React.FC<SiteMetricsRowProps> = ({ site }) => {
           <MetricBlock
             type="clicks"
             value={site.clicks}
-            sparklineData={generateSparklineData()}
-            trend="up"
-            trendValue="+12.5%"
+            trend={clicksTrend}
+            trendValue={`${clicksTrend > 0 ? '+' : ''}${clicksTrend.toFixed(1)}%`}
           />
         </div>
         <div className="col-span-2">
           <MetricBlock
             type="impressions"
             value={site.impressions}
-            sparklineData={generateSparklineData()}
-            trend="up"
-            trendValue="+8.3%"
+            trend={impressionsTrend}
+            trendValue={`${impressionsTrend > 0 ? '+' : ''}${impressionsTrend.toFixed(1)}%`}
           />
         </div>
 
@@ -116,6 +103,8 @@ export const SiteMetricsRow: React.FC<SiteMetricsRowProps> = ({ site }) => {
             totalUsers={metrics?.activeUsers || 0}
             pageViews={metrics?.pageViews || 0}
             period={periodLabel}
+            totalUsersTrend={usersTrend}
+            pageViewsTrend={pageViewsTrend}
           />
         </div>
 
