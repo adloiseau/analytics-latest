@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { FileText, Search, X } from 'lucide-react';
+import { FileText, Search, BarChart2, X } from 'lucide-react';
 import { NavItem } from './layout/navigation/NavItem';
 
 interface SidebarProps {
@@ -31,7 +31,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   const navItems = [
     { to: '/top-pages', icon: FileText, label: 'Top Pages' },
-    { to: '/top-queries', icon: Search, label: 'Top Queries' }
+    { to: '/top-queries', icon: Search, label: 'Top Queries' },
+    { to: '/traffic-sources', icon: BarChart2, label: 'Trafic par Source' }
   ];
 
   return (
