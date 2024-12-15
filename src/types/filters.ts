@@ -1,0 +1,1 @@
+export type DateRange = '24h' | '7d' | '28d' | '3m';
