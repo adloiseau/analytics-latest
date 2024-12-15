@@ -4,8 +4,14 @@ import { Header } from './components/Header';
 import { MetricCard } from './components/MetricCard';
 import { TrafficChart } from './components/TrafficChart';
 import { KeywordsTable } from './components/KeywordsTable';
+import { AuthCallback } from './pages/AuthCallback';
 
 function App() {
+  // Simple routing
+  if (window.location.pathname === '/auth/callback') {
+    return <AuthCallback />;
+  }
+
   return (
     <div className="min-h-screen bg-[#141517] text-white">
       <Header />
