@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
@@ -9,14 +8,22 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    strictPort: true, // Force the specified port
+    strictPort: true,
   },
   preview: {
     port: 5173,
     strictPort: true,
   },
-  // Add environment variables
   define: {
     'import.meta.env.PROD': JSON.stringify(process.env.NODE_ENV === 'production')
-  }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom', 'date-fns', 'recharts'],
+        },
+      },
+    },
+  },
 });

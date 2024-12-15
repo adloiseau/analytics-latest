@@ -1,30 +1,29 @@
-import { subDays, format } from 'date-fns';
-import type { DateRange } from '../components/DateRangeSelector';
+import { subDays, format, startOfDay, endOfDay } from 'date-fns';
+import type { DateRange } from '../types/filters';
 
 export const getDateRange = (range: DateRange) => {
-  const now = new Date();
+  const now = endOfDay(new Date());
   let startDate: Date;
-  const endDate = now;
 
   switch (range) {
     case '24h':
-      startDate = subDays(now, 1);
+      startDate = startOfDay(subDays(now, 1));
       break;
     case '7d':
-      startDate = subDays(now, 7);
+      startDate = startOfDay(subDays(now, 7));
       break;
     case '28d':
-      startDate = subDays(now, 28);
+      startDate = startOfDay(subDays(now, 28));
       break;
     case '3m':
-      startDate = subDays(now, 90);
+      startDate = startOfDay(subDays(now, 90));
       break;
     default:
-      startDate = subDays(now, 7);
+      startDate = startOfDay(subDays(now, 1));
   }
 
   return {
     startDate: format(startDate, 'yyyy-MM-dd'),
-    endDate: format(endDate, 'yyyy-MM-dd')
+    endDate: format(now, 'yyyy-MM-dd')
   };
 };

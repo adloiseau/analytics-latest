@@ -11,23 +11,46 @@ export const filterData = (data: SearchAnalyticsRow[], searchQuery: string) => {
 };
 
 export const deduplicateTableData = (data: SearchAnalyticsRow[]) => {
-  const uniqueRows = new Map<string, SearchAnalyticsRow>();
-  
-  data.forEach(row => {
+  const seen = new Set<string>();
+  return data.filter(row => {
     const key = row.keys[0];
-    if (!uniqueRows.has(key) || row.clicks > uniqueRows.get(key)!.clicks) {
-      uniqueRows.set(key, row);
-    }
-  });
-
-  return Array.from(uniqueRows.values())
-    .sort((a, b) => b.clicks - a.clicks);
+    const isDuplicate = seen.has(key);
+    seen.add(key);
+    return !isDuplicate;
+  }).sort((a, b) => b.clicks - a.clicks);
 };
 
 export const prepareChartData = (data: SearchAnalyticsRow[]) => {
-  return data.map(row => ({
-    date: row.keys[0],
-    clicks: row.clicks,
-    impressions: row.impressions
-  })).sort((a, b) => a.date.localeCompare(b.date));
+  return data
+    .map(row => ({
+      date: row.keys[0],
+      clicks: row.clicks,
+      impressions: row.impressions
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+};
+
+export const formatMetric = (value: number): string => {
+  if (value >= 1000000) {
+    return `${(value / 1000000).toFixed(1)}M`;
+  }
+  if (value >= 1000) {
+    return `${(value / 1000).toFixed(1)}k`;
+  }
+  return value.toString();
+};
+
+export const formatDuration = (seconds: number): string => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
+
+export const validateUrl = (url: string): boolean => {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
 };

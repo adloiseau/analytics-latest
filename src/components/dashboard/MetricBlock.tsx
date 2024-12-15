@@ -1,8 +1,8 @@
 import React from 'react';
-import { Search, BarChart3, Users, Clock, ArrowUpRight } from 'lucide-react';
+import { Search, BarChart3, Users, Clock, Eye, ArrowUpRight } from 'lucide-react';
 import { SparklineChart } from '../metrics/SparklineChart';
 
-type MetricType = 'clicks' | 'impressions' | 'users' | 'duration';
+type MetricType = 'clicks' | 'impressions' | 'users' | 'pageViews' | 'duration' | 'bounce';
 
 interface MetricConfig {
   icon: any;
@@ -14,7 +14,9 @@ const metricConfigs: Record<MetricType, MetricConfig> = {
   clicks: { icon: Search, label: 'Clics', color: '#3b82f6' },
   impressions: { icon: BarChart3, label: 'Impressions', color: '#10b981' },
   users: { icon: Users, label: 'Utilisateurs', color: '#8b5cf6' },
-  duration: { icon: Clock, label: 'Durée moy.', color: '#f59e0b' }
+  pageViews: { icon: Eye, label: 'Pages vues', color: '#f59e0b' },
+  duration: { icon: Clock, label: 'Durée moy.', color: '#ec4899' },
+  bounce: { icon: Clock, label: 'Taux rebond', color: '#6366f1' }
 };
 
 interface MetricBlockProps {

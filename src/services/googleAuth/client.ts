@@ -1,63 +1,51 @@
-import { AUTH_CONFIG } from '../../config/auth.config';
-import { STORAGE_KEYS } from '../../config/storage.config';
+import { GoogleAuthConfig } from './types';
+import { getAuthConfig } from './config';
 import { storage } from '../../utils/storage';
-import type { TokenResponse, GoogleAuthClient } from './types';
-
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        oauth2: {
-          initTokenClient: (config: any) => GoogleAuthClient;
-        };
-        revoke: (token: string, callback?: () => void) => void;
-      };
-    };
-  }
-}
+import { STORAGE_KEYS } from '../../config/storage.config';
 
 class GoogleAuthClientService {
-  private client: GoogleAuthClient | null = null;
+  private config: GoogleAuthConfig;
 
-  initialize(): Promise<void> {
-    return new Promise((resolve) => {
-      if (!window.google?.accounts?.oauth2) {
-        throw new Error('Google Identity Services not loaded');
-      }
-
-      this.client = window.google.accounts.oauth2.initTokenClient({
-        client_id: AUTH_CONFIG.GOOGLE_CLIENT_ID,
-        scope: AUTH_CONFIG.SCOPES.join(' '),
-        callback: (response: TokenResponse) => {
-          if (response.access_token) {
-            storage.set(STORAGE_KEYS.ACCESS_TOKEN, response.access_token);
-            resolve();
-          }
-        },
-      });
-
-      resolve();
-    });
+  constructor() {
+    this.config = getAuthConfig();
   }
 
-  async login(): Promise<void> {
-    if (!this.client) {
-      await this.initialize();
-    }
-    this.client?.requestAccessToken();
+  login(): void {
+    const params = new URLSearchParams({
+      client_id: this.config.clientId,
+      redirect_uri: this.config.redirectUri,
+      response_type: 'token',
+      scope: this.config.scopes.join(' '),
+      prompt: 'consent'
+      // Suppression de access_type car incompatible avec response_type=token
+    });
+
+    window.location.href = `${this.config.authEndpoint}?${params.toString()}`;
   }
 
   logout(): void {
-    const token = storage.get(STORAGE_KEYS.ACCESS_TOKEN);
-    if (token && window.google?.accounts) {
-      window.google.accounts.revoke(token, () => {
-        storage.remove(STORAGE_KEYS.ACCESS_TOKEN);
-      });
-    }
+    storage.remove(STORAGE_KEYS.ACCESS_TOKEN);
+    window.location.href = '/';
   }
 
   getAccessToken(): string | null {
     return storage.get(STORAGE_KEYS.ACCESS_TOKEN);
+  }
+
+  handleCallback(hash: string): void {
+    try {
+      const params = new URLSearchParams(hash.substring(1));
+      const accessToken = params.get('access_token');
+      
+      if (!accessToken) {
+        throw new Error('No access token received');
+      }
+
+      storage.set(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
+    } catch (error) {
+      console.error('Error handling auth callback:', error);
+      storage.remove(STORAGE_KEYS.ACCESS_TOKEN);
+    }
   }
 }
 

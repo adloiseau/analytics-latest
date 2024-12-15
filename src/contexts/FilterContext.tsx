@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
-import type { DateRange } from '../components/DateRangeSelector';
+import type { DateRange } from '../types/filters';
 
 interface FilterContextType {
   dateRange: DateRange;
@@ -11,7 +11,8 @@ interface FilterContextType {
 const FilterContext = createContext<FilterContextType | null>(null);
 
 export const FilterProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [dateRange, setDateRange] = useState<DateRange>('28d');
+  // Définir la période par défaut à 7 jours
+  const [dateRange, setDateRange] = useState<DateRange>('7d');
   const [searchQuery, setSearchQuery] = useState('');
 
   return (

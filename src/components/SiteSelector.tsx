@@ -1,67 +1,85 @@
 import React, { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Globe } from 'lucide-react';
 import { useSearchConsoleSites } from '../hooks/useSearchConsoleSites';
+import { useSite } from '../contexts/SiteContext';
 import type { Site } from '../hooks/useSearchConsoleSites';
 
-interface SiteSelectorProps {
-  onSiteChange?: (site: Site) => void;
-}
-
-export const SiteSelector: React.FC<SiteSelectorProps> = ({ onSiteChange }) => {
+export const SiteSelector: React.FC = () => {
   const { sites, loading, error } = useSearchConsoleSites();
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedSite, setSelectedSite] = useState<Site | null>(null);
+  const { selectedSite, setSelectedSite } = useSite();
 
   const handleSiteSelect = (site: Site) => {
-    setSelectedSite(site);
+    setSelectedSite(site.siteUrl);
     setIsOpen(false);
-    onSiteChange?.(site);
   };
 
   if (loading) {
     return (
-      <div className="flex items-center bg-[#25262b] rounded-md px-3 py-1.5">
-        <span className="text-gray-300 text-sm">Chargement des sites...</span>
+      <div className="flex items-center bg-[#25262b] rounded-lg px-4 py-2.5 shadow-lg border border-gray-800/50">
+        <div className="animate-pulse flex items-center space-x-3">
+          <div className="w-4 h-4 bg-gray-600 rounded-full"></div>
+          <div className="h-4 bg-gray-600 rounded w-32"></div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center bg-[#25262b] rounded-md px-3 py-1.5">
-        <span className="text-red-400 text-sm">{error}</span>
+      <div className="flex items-center bg-[#25262b] rounded-lg px-4 py-2.5 text-red-400 text-sm shadow-lg border border-gray-800/50">
+        <span>{error}</span>
       </div>
     );
   }
 
+  const selectedSiteData = sites.find(site => site.siteUrl === selectedSite);
+  const hostname = selectedSiteData ? new URL(selectedSiteData.siteUrl).hostname : 'Sélectionner un site';
+
   return (
-    <div className="relative">
+    <div className="relative z-50">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center bg-[#25262b] rounded-md px-3 py-1.5 hover:bg-[#2d2e33] transition-colors"
+        className="flex items-center bg-[#25262b] rounded-lg px-4 py-2.5 
+                   hover:bg-[#2d2e33] transition-colors min-w-[200px] shadow-lg
+                   border border-gray-800/50 group w-full lg:w-auto"
       >
-        <span className="text-gray-300 text-sm mr-2">
-          {selectedSite ? new URL(selectedSite.siteUrl).hostname : 'Tous les sites'}
+        <Globe className="w-4 h-4 text-gray-400 group-hover:text-gray-300 mr-3 flex-shrink-0" />
+        <span className="text-gray-300 text-sm truncate flex-1 text-left group-hover:text-white">
+          {hostname}
         </span>
-        <ChevronDown className="w-4 h-4 text-gray-400" />
+        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0
+                              ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 w-64 bg-[#25262b] rounded-md shadow-lg py-1 z-50">
-          {sites.length === 0 ? (
-            <div className="px-3 py-2 text-sm text-gray-400">Aucun site trouvé</div>
-          ) : (
-            sites.map((site) => (
-              <button
-                key={site.siteUrl}
-                onClick={() => handleSiteSelect(site)}
-                className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-[#2d2e33] transition-colors"
-              >
-                {new URL(site.siteUrl).hostname}
-              </button>
-            ))
-          )}
-        </div>
+        <>
+          <div 
+            className="fixed inset-0 z-40" 
+            onClick={() => setIsOpen(false)}
+          />
+          <div className="absolute top-full left-0 mt-2 w-full bg-[#25262b] rounded-lg 
+                        shadow-xl border border-gray-800/50 py-1 z-50">
+            {sites.length === 0 ? (
+              <div className="px-4 py-3 text-sm text-gray-400">Aucun site trouvé</div>
+            ) : (
+              sites.map((site) => (
+                <button
+                  key={site.siteUrl}
+                  onClick={() => handleSiteSelect(site)}
+                  className="w-full text-left px-4 py-2.5 text-sm text-gray-300 
+                           hover:bg-[#2d2e33] transition-colors flex items-center space-x-3
+                           group"
+                >
+                  <Globe className="w-4 h-4 text-gray-400 group-hover:text-gray-300 flex-shrink-0" />
+                  <span className="truncate group-hover:text-white">
+                    {new URL(site.siteUrl).hostname}
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+        </>
       )}
     </div>
   );

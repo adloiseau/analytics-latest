@@ -15,10 +15,13 @@ export const analyticsApi = {
             metrics: [
               { name: 'activeUsers' },
               { name: 'screenPageViews' },
-              { name: 'averageSessionDuration' },
-              { name: 'bounceRate' }
+              { name: 'eventCount' },
+              { name: 'conversions' }
             ],
-            minuteRanges: [{ name: 'current', startMinutesAgo: 30 }]
+            minuteRanges: [{ 
+              startMinutesAgo: 25,
+              endMinutesAgo: 0
+            }]
           })
         }
       );

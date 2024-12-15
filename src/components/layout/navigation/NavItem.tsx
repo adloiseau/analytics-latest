@@ -24,7 +24,7 @@ export const NavItem: React.FC<NavItemProps> = ({
       onClick={onMobileClick}
       className={({ isActive }) =>
         `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200
-         hover:bg-[#25262b] group
+         hover:bg-[#25262b] group relative
          ${isActive 
            ? 'bg-blue-500/10 text-blue-400' 
            : 'text-gray-400 hover:text-white'}`
@@ -37,7 +37,8 @@ export const NavItem: React.FC<NavItemProps> = ({
       {isCollapsed && (
         <div className="fixed left-14 ml-4 px-2 py-1 bg-gray-900 rounded-md 
                       text-white text-sm opacity-0 group-hover:opacity-100 
-                      transition-opacity duration-200 pointer-events-none">
+                      transition-opacity duration-200 pointer-events-none
+                      whitespace-nowrap z-50">
           {label}
         </div>
       )}

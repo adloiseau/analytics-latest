@@ -1,7 +1,6 @@
 import React from 'react';
 import { Calendar } from 'lucide-react';
-
-export type DateRange = '24h' | '7d' | '30d' | '90d';
+import type { DateRange } from '../types/filters';
 
 interface DateRangeSelectorProps {
   selectedRange: DateRange;
@@ -10,26 +9,30 @@ interface DateRangeSelectorProps {
 
 export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({ selectedRange, onChange }) => {
   const ranges: { value: DateRange; label: string }[] = [
-    { value: '24h', label: '24 heures' },
-    { value: '7d', label: '7 jours' },
-    { value: '30d', label: '30 jours' },
-    { value: '90d', label: '90 jours' },
+    { value: '24h', label: '24h' },
+    { value: '7d', label: '7j' },
+    { value: '28d', label: '28j' },
+    { value: '3m', label: '3m' },
   ];
 
   return (
-    <div className="flex items-center bg-[#25262b] rounded-md px-3 py-1.5 cursor-pointer relative group">
-      <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-      <select
-        value={selectedRange}
-        onChange={(e) => onChange(e.target.value as DateRange)}
-        className="bg-transparent text-gray-300 text-sm appearance-none cursor-pointer outline-none"
-      >
+    <div className="flex items-center gap-2 bg-[#25262b] rounded-lg p-1.5 border border-gray-800/50">
+      <Calendar className="w-4 h-4 text-gray-400 ml-2" />
+      <div className="flex">
         {ranges.map((range) => (
-          <option key={range.value} value={range.value} className="bg-[#25262b]">
+          <button
+            key={range.value}
+            onClick={() => onChange(range.value)}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+              selectedRange === range.value
+                ? 'bg-blue-500 text-white shadow-lg'
+                : 'text-gray-400 hover:text-white hover:bg-[#2d2e33]'
+            }`}
+          >
             {range.label}
-          </option>
+          </button>
         ))}
-      </select>
+      </div>
     </div>
   );
 };
