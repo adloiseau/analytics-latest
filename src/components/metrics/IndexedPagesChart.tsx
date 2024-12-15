@@ -15,15 +15,15 @@ export const IndexedPagesChart: React.FC<IndexedPagesChartProps> = ({ totalPages
   const COLORS = ['#3b82f6', '#1f2937'];
 
   return (
-    <div className="h-[60px]">
+    <div className="h-[30px] w-[30px]">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
             data={data}
             cx="50%"
             cy="50%"
-            innerRadius={15}
-            outerRadius={25}
+            innerRadius={8}
+            outerRadius={15}
             paddingAngle={2}
             dataKey="value"
           >

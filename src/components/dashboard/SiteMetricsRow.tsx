@@ -67,6 +67,7 @@ export const SiteMetricsRow: React.FC<SiteMetricsRowProps> = ({ site }) => {
   return (
     <div className="bg-[#25262b]/50 rounded-lg p-4 border border-gray-800/10 hover:border-gray-700/30 
                     transition-all duration-200">
+      {/* Header */}
       <div className="flex items-center justify-between gap-4 mb-4">
         <div className="flex items-center gap-3">
           <Globe className="w-5 h-5 text-blue-400" />
@@ -86,29 +87,30 @@ export const SiteMetricsRow: React.FC<SiteMetricsRowProps> = ({ site }) => {
         </div>
       </div>
 
+      {/* Metrics Grid */}
       <div className="grid grid-cols-12 gap-3">
         {/* Search Console Metrics */}
-        <div className="col-span-4">
-          <div className="grid grid-cols-2 gap-3">
-            <MetricBlock
-              type="clicks"
-              value={site.clicks}
-              sparklineData={generateSparklineData()}
-              trend="up"
-              trendValue="+12.5%"
-            />
-            <MetricBlock
-              type="impressions"
-              value={site.impressions}
-              sparklineData={generateSparklineData()}
-              trend="up"
-              trendValue="+8.3%"
-            />
-          </div>
+        <div className="col-span-2">
+          <MetricBlock
+            type="clicks"
+            value={site.clicks}
+            sparklineData={generateSparklineData()}
+            trend="up"
+            trendValue="+12.5%"
+          />
+        </div>
+        <div className="col-span-2">
+          <MetricBlock
+            type="impressions"
+            value={site.impressions}
+            sparklineData={generateSparklineData()}
+            trend="up"
+            trendValue="+8.3%"
+          />
         </div>
 
         {/* User Metrics */}
-        <div className="col-span-6">
+        <div className="col-span-7">
           <UserMetrics
             realtimeUsers={realtimeMetrics?.activeUsers || 0}
             totalUsers={metrics?.activeUsers || 0}
@@ -118,17 +120,19 @@ export const SiteMetricsRow: React.FC<SiteMetricsRowProps> = ({ site }) => {
         </div>
 
         {/* Indexed Pages Chart */}
-        <div className="col-span-2">
+        <div className="col-span-1">
           <div className="bg-[#1a1b1e]/50 p-3 rounded-lg h-full">
-            <h4 className="text-sm text-gray-400 mb-1">Pages indexées</h4>
-            <IndexedPagesChart
-              totalPages={indexedPages.total}
-              indexedPages={indexedPages.indexed}
-            />
-            <div className="text-center mt-1">
-              <span className="text-xs text-gray-300">
-                {indexedPages.indexed}/{indexedPages.total}
-              </span>
+            <div className="flex flex-col items-center">
+              <h4 className="text-xs text-gray-400 mb-1">Pages indexées</h4>
+              <IndexedPagesChart
+                totalPages={indexedPages.total}
+                indexedPages={indexedPages.indexed}
+              />
+              <div className="text-center mt-1">
+                <span className="text-xs text-gray-300">
+                  {indexedPages.indexed}/{indexedPages.total}
+                </span>
+              </div>
             </div>
           </div>
         </div>

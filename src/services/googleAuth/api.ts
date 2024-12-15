@@ -7,8 +7,9 @@ export const searchConsoleApi = {
         'https://www.googleapis.com/webmasters/v3/sites',
         {
           headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          }
         }
       );
       
@@ -34,7 +35,7 @@ export const searchConsoleApi = {
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${accessToken}`,
+            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -63,19 +64,12 @@ export const searchConsoleApi = {
   ): Promise<IndexedPagesResponse> {
     try {
       const response = await fetch(
-        `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchanalytics/query`,
+        `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/sitemaps`,
         {
-          method: 'POST',
           headers: {
-            Authorization: `Bearer ${accessToken}`,
+            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            startDate: '2024-01-01',
-            endDate: '2024-12-31',
-            dimensions: ['page'],
-            rowLimit: 5000
-          })
+          }
         }
       );
       
@@ -84,13 +78,19 @@ export const searchConsoleApi = {
       }
       
       const data = await response.json();
-      const total = data.rows?.length || 100;
-      const indexed = data.rows?.filter((row: any) => !row.responseAggregationType).length || 80;
+      const sitemap = data.sitemap?.[0];
       
-      return { total, indexed };
+      if (sitemap) {
+        return {
+          total: sitemap.contents?.web?.discovered || 100,
+          indexed: sitemap.contents?.web?.submitted || 80
+        };
+      }
+      
+      return { total: 100, indexed: 80 };
     } catch (error) {
       console.error('Error fetching indexed pages:', error);
-      return { total: 100, indexed: 80 }; // Valeurs par défaut en cas d'erreur
+      return { total: 100, indexed: 80 };
     }
   }
 };

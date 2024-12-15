@@ -3,7 +3,6 @@ import { getRedirectUri } from '../../utils/environment';
 
 export const getAuthConfig = (): GoogleAuthConfig => ({
   clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
-  clientSecret: import.meta.env.VITE_GOOGLE_CLIENT_SECRET || '',
   scopes: (import.meta.env.VITE_OAUTH_SCOPES || '').split(',').filter(Boolean),
   authEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
   redirectUri: getRedirectUri(),
