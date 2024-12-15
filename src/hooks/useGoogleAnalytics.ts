@@ -6,6 +6,7 @@ import type { RealTimeMetrics } from '../types/analytics';
 
 export const useGoogleAnalytics = (websiteUrl: string) => {
   const [metrics, setMetrics] = useState<RealTimeMetrics | null>(null);
+  const [realtimeMetrics, setRealtimeMetrics] = useState<RealTimeMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { accessToken } = useAuth();
@@ -24,8 +25,13 @@ export const useGoogleAnalytics = (websiteUrl: string) => {
 
     const fetchData = async () => {
       try {
-        const data = await analyticsApi.getRealTimeData(propertyId, accessToken);
-        setMetrics(data);
+        const [metricsData, realtimeData] = await Promise.all([
+          analyticsApi.getMetricsData(propertyId, accessToken),
+          analyticsApi.getRealTimeData(propertyId, accessToken)
+        ]);
+        
+        setMetrics(metricsData);
+        setRealtimeMetrics(realtimeData);
         setError(null);
       } catch (err) {
         console.error('Error fetching Google Analytics data:', err);
@@ -41,5 +47,5 @@ export const useGoogleAnalytics = (websiteUrl: string) => {
     return () => clearInterval(interval);
   }, [websiteUrl, accessToken]);
 
-  return { metrics, loading, error };
+  return { metrics, realtimeMetrics, loading, error };
 };

@@ -8,6 +8,7 @@ import { ChartContainer } from './ChartContainer';
 import { EmptyChart } from './EmptyChart';
 import { ChartLegend } from './ChartLegend';
 import { useWindowSize } from '../../../hooks/useWindowSize';
+import { useSelectedItem } from '../../../contexts/SelectedItemContext';
 
 interface ChartDataPoint {
   date: string;
@@ -31,15 +32,22 @@ const formatDate = (dateStr: string) => {
 
 export const MetricsChart: React.FC<MetricsChartProps> = ({ data, title }) => {
   const { width } = useWindowSize();
+  const { selectedItem } = useSelectedItem();
   const isMobile = width < 640;
 
-  const formattedData = useMemo(() => 
-    data?.map(item => ({
+  const formattedData = useMemo(() => {
+    let filteredData = data;
+    if (selectedItem) {
+      filteredData = data.filter(item => {
+        const key = item.date;
+        return key === selectedItem;
+      });
+    }
+    return filteredData?.map(item => ({
       ...item,
       displayDate: formatDate(item.date)
-    })) || [], 
-    [data]
-  );
+    })) || [];
+  }, [data, selectedItem]);
 
   if (!data?.length) {
     return (

@@ -1,8 +1,10 @@
 export interface GoogleAuthConfig {
   clientId: string;
+  clientSecret: string;
   scopes: string[];
   authEndpoint: string;
   redirectUri: string;
+  tokenEndpoint: string;
 }
 
 export interface AuthState {
@@ -13,6 +15,7 @@ export interface AuthState {
 export interface AuthError {
   code: string;
   message: string;
+  error_description?: string;
 }
 
 export interface SearchAnalyticsRequest {
@@ -33,4 +36,9 @@ export interface SearchAnalyticsRow {
 export interface SearchAnalyticsResponse {
   rows?: SearchAnalyticsRow[];
   responseAggregationType?: string;
+}
+
+export interface IndexedPagesResponse {
+  total: number;
+  indexed: number;
 }

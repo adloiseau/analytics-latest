@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { googleAuthClient } from '../services/googleAuth/client';
 
 export const AuthCallback: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     try {
       if (window.location.hash) {
         googleAuthClient.handleCallback(window.location.hash);
-        window.location.href = '/';
+        navigate('/');
       } else {
         setError('No authentication data received');
       }
@@ -16,7 +18,7 @@ export const AuthCallback: React.FC = () => {
       console.error('Authentication error:', error);
       setError('Authentication failed');
     }
-  }, []);
+  }, [navigate]);
 
   if (error) {
     return (

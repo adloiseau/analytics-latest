@@ -1,7 +1,9 @@
 import { TrafficSource, TrafficSourceData } from '../types/traffic';
 
 export const calculateTrend = (current: number, previous: number): number => {
-  if (previous === 0) return 0;
+  if (previous === 0) {
+    return current > 0 ? 100 : 0;
+  }
   return ((current - previous) / previous) * 100;
 };
 
@@ -18,11 +20,14 @@ export const aggregateSourceData = (data: TrafficSourceData[]): TrafficSource[] 
       acc[source] = {
         name: source,
         visitors: 0,
+        previousVisitors: 0,
         trend: 0,
         sparklineData: []
       };
     }
-    acc[source].visitors += Number(curr.visitors || 0);
+    acc[source].visitors = Number(curr.visitors || 0);
+    acc[source].previousVisitors = Number(curr.previousVisitors || 0);
+    acc[source].trend = Number(curr.trend || 0);
     acc[source].sparklineData.push(Number(curr.visitors || 0));
     return acc;
   }, {} as Record<string, TrafficSource>);

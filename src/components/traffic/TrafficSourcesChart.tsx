@@ -1,14 +1,16 @@
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CustomTooltip } from '../metrics/chart/CustomTooltip';
 import { ChartContainer } from '../metrics/chart/ChartContainer';
 import { useTrafficSources } from '../../hooks/useTrafficSources';
+import { useTrafficSource } from '../../contexts/TrafficSourceContext';
 import { TRAFFIC_SOURCES } from '../../config/traffic-sources.config';
 
 export const TrafficSourcesChart: React.FC = () => {
   const { data, isLoading, error } = useTrafficSources();
+  const { selectedSource } = useTrafficSource();
 
   if (isLoading) {
     return (
@@ -36,12 +38,16 @@ export const TrafficSourcesChart: React.FC = () => {
     }
   };
 
+  const sourcesToDisplay = selectedSource 
+    ? TRAFFIC_SOURCES.filter(source => source.name === selectedSource)
+    : TRAFFIC_SOURCES;
+
   return (
     <ChartContainer title="Évolution du Trafic par Source">
       <div className="h-[400px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart 
-            data={data?.timelineData}
+            data={data?.timelineData || []}
             margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#333" />
@@ -57,8 +63,7 @@ export const TrafficSourcesChart: React.FC = () => {
               tick={{ fill: '#666' }}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Legend />
-            {TRAFFIC_SOURCES.map((source) => (
+            {sourcesToDisplay.map((source) => (
               <Line
                 key={source.name}
                 type="monotone"

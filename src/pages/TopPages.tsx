@@ -4,6 +4,7 @@ import { Layout } from '../components/Layout';
 import { TopMetricsCard } from '../components/TopMetricsCard';
 import { MetricsChart } from '../components/metrics/chart/MetricsChart';
 import { SiteSelector } from '../components/SiteSelector';
+import { SelectedItemProvider } from '../contexts/SelectedItemContext';
 
 export const TopPages: React.FC = () => {
   const { data, isLoading, error } = useSearchConsoleData('page');
@@ -31,26 +32,28 @@ export const TopPages: React.FC = () => {
 
   return (
     <Layout>
-      <div className="space-y-4">
-        <div className="w-full max-w-xs">
-          <SiteSelector />
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          <div className="lg:col-span-4">
-            <TopMetricsCard 
-              title="Top 5 Pages" 
-              data={data?.rows || []} 
-              dimension="page"
-            />
+      <SelectedItemProvider>
+        <div className="space-y-4">
+          <div className="w-full max-w-xs">
+            <SiteSelector />
           </div>
-          <div className="lg:col-span-8">
-            <MetricsChart 
-              data={data?.chartData || []} 
-              title="Évolution du Trafic"
-            />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <div className="lg:col-span-4">
+              <TopMetricsCard 
+                title="Top 5 Pages" 
+                data={data?.rows || []} 
+                dimension="page"
+              />
+            </div>
+            <div className="lg:col-span-8">
+              <MetricsChart 
+                data={data?.chartData || []} 
+                title="Évolution du Trafic"
+              />
+            </div>
           </div>
         </div>
-      </div>
+      </SelectedItemProvider>
     </Layout>
   );
 };

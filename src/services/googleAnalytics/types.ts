@@ -1,3 +1,10 @@
+export interface AnalyticsApiResponse {
+  rows?: {
+    dimensionValues: { value: string }[];
+    metricValues: { value: string }[];
+  }[];
+}
+
 export interface GoogleAnalyticsConfig {
   measurementId: string;
 }

@@ -11,13 +11,16 @@ class GoogleAuthClientService {
   }
 
   login(): void {
+    const state = Math.random().toString(36).substring(7);
+    storage.set(STORAGE_KEYS.AUTH_STATE, state);
+
     const params = new URLSearchParams({
       client_id: this.config.clientId,
       redirect_uri: this.config.redirectUri,
       response_type: 'token',
+      state,
       scope: this.config.scopes.join(' '),
       prompt: 'consent'
-      // Suppression de access_type car incompatible avec response_type=token
     });
 
     window.location.href = `${this.config.authEndpoint}?${params.toString()}`;
@@ -25,6 +28,7 @@ class GoogleAuthClientService {
 
   logout(): void {
     storage.remove(STORAGE_KEYS.ACCESS_TOKEN);
+    storage.remove(STORAGE_KEYS.AUTH_STATE);
     window.location.href = '/';
   }
 
@@ -36,15 +40,24 @@ class GoogleAuthClientService {
     try {
       const params = new URLSearchParams(hash.substring(1));
       const accessToken = params.get('access_token');
+      const state = params.get('state');
       
+      const storedState = storage.get(STORAGE_KEYS.AUTH_STATE);
+      if (state !== storedState) {
+        throw new Error('Invalid state parameter');
+      }
+
       if (!accessToken) {
         throw new Error('No access token received');
       }
 
       storage.set(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
+      storage.remove(STORAGE_KEYS.AUTH_STATE);
     } catch (error) {
       console.error('Error handling auth callback:', error);
       storage.remove(STORAGE_KEYS.ACCESS_TOKEN);
+      storage.remove(STORAGE_KEYS.AUTH_STATE);
+      throw error;
     }
   }
 }
