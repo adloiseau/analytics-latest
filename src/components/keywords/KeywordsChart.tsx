@@ -1,9 +1,11 @@
 import React from 'react';
 import { useSearchConsoleData } from '../../hooks/useSearchConsoleData';
 import { MetricsChart } from '../metrics/chart/MetricsChart';
+import { useSelectedItem } from '../../contexts/SelectedItemContext';
 
 export const KeywordsChart = () => {
   const { data, isLoading } = useSearchConsoleData('query');
+  const { selectedItem } = useSelectedItem();
 
   if (isLoading) {
     return (
@@ -15,9 +17,13 @@ export const KeywordsChart = () => {
     );
   }
 
+  const filteredData = selectedItem
+    ? data?.chartData?.filter(item => item.keys?.includes(selectedItem))
+    : data?.chartData;
+
   return (
     <MetricsChart 
-      data={data?.chartData || []} 
+      data={filteredData || []} 
       title="Évolution des Positions"
       dimension="query"
     />

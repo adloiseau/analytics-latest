@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Search, Menu, Home } from 'lucide-react';
+import { Menu, Home } from 'lucide-react';
 import { GoogleAuthButton } from './GoogleAuthButton';
 import { DateRangeSelector } from './DateRangeSelector';
 import { useFilters } from '../contexts/FilterContext';
@@ -10,7 +10,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
-  const { searchQuery, setSearchQuery, dateRange, setDateRange } = useFilters();
+  const { dateRange, setDateRange } = useFilters();
   const headerRef = useRef<HTMLDivElement>(null);
   const [isHidden, setIsHidden] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -86,22 +86,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             <GoogleAuthButton compact />
           </div>
 
-          <div className="flex items-center gap-3 flex-1 max-w-2xl ml-4">
-            <div className="relative flex-1">
-              <input
-                type="text"
-                placeholder="Rechercher une page ou requête..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2.5 bg-[#25262b]/50 border border-gray-700/50 rounded-lg 
-                         text-sm text-gray-200 placeholder-gray-400
-                         focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent
-                         transition-all duration-200"
-              />
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            </div>
-            <DateRangeSelector selectedRange={dateRange} onChange={setDateRange} />
-          </div>
+          <DateRangeSelector selectedRange={dateRange} onChange={setDateRange} />
         </div>
       </div>
     </header>

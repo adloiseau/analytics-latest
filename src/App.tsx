@@ -2,10 +2,9 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { Dashboard } from './pages/Dashboard';
-import { TopPages } from './pages/TopPages';
-import { TopQueries } from './pages/TopQueries';
-import { TrafficBySource } from './pages/TrafficBySource';
+import { Top } from './pages/Top';
 import { Keywords } from './pages/Keywords';
+import { TrafficBySource } from './pages/TrafficBySource';
 import { AuthCallback } from './pages/AuthCallback';
 
 const queryClient = new QueryClient({
@@ -22,10 +21,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Routes>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/top-pages" element={<TopPages />} />
-        <Route path="/top-queries" element={<TopQueries />} />
-        <Route path="/traffic-sources" element={<TrafficBySource />} />
+        <Route path="/top" element={<Top />} />
         <Route path="/keywords" element={<Keywords />} />
+        <Route path="/traffic-sources" element={<TrafficBySource />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
       </Routes>
     </QueryClientProvider>
