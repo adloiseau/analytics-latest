@@ -10,11 +10,11 @@ import type { SearchAnalyticsRow } from '../services/googleAuth/types';
 
 type Dimension = 'page' | 'query' | 'site';
 
-export const useSearchConsoleData = (
+export function useSearchConsoleData(
   dimension: Dimension,
   customStartDate?: string,
   customEndDate?: string
-) => {
+) {
   const { accessToken, isAuthenticated } = useAuth();
   const { selectedSite } = useSite();
   const { dateRange, searchQuery } = useFilters();
@@ -115,4 +115,4 @@ export const useSearchConsoleData = (
       retry: 2,
     }
   );
-};
+}

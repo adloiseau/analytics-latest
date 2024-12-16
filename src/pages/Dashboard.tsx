@@ -21,22 +21,17 @@ export const Dashboard = () => {
   const { data: currentData, isLoading, error } = useSearchConsoleData('site');
   const { data: previousData } = useSearchConsoleData('site', previousStartDate, previousEndDate);
 
-  // Sort sites by real-time users
+  // Sort sites by organic traffic (TO)
   const sortedSites = useMemo(() => {
     if (!currentData?.rows) return [];
-    
-    return [...currentData.rows].sort((a, b) => {
-      const metricsA = a.metrics?.activeUsers || 0;
-      const metricsB = b.metrics?.activeUsers || 0;
-      return metricsB - metricsA; // Sort in descending order
-    });
+    return [...currentData.rows].sort((a, b) => b.clicks - a.clicks);
   }, [currentData?.rows]);
 
   return (
     <Layout>
-      <div className="space-y-3">
+      <div className="space-y-0.5">
         {isLoading ? (
-          <div className="space-y-3">
+          <div className="space-y-0.5">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="animate-pulse">
                 <div className="h-[160px] bg-[#25262b] rounded-lg" />
@@ -48,7 +43,7 @@ export const Dashboard = () => {
             <p className="text-red-400">{error.message}</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-0.5">
             {sortedSites.map((site, index) => {
               const previousSite = previousData?.rows?.find(
                 prev => prev.keys[0] === site.keys[0]

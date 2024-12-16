@@ -5,7 +5,7 @@ import { GA_PROPERTY_IDS } from '../config/analytics.config';
 import { REFRESH_CONFIG } from '../config/refresh';
 import type { RealTimeMetrics } from '../types/analytics';
 
-export const useGoogleAnalytics = (websiteUrl: string) => {
+export function useGoogleAnalytics(websiteUrl: string) {
   const [metrics, setMetrics] = useState<RealTimeMetrics | null>(null);
   const [realtimeMetrics, setRealtimeMetrics] = useState<RealTimeMetrics | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,4 +55,4 @@ export const useGoogleAnalytics = (websiteUrl: string) => {
   }, [websiteUrl, accessToken]);
 
   return { metrics, realtimeMetrics, loading, error };
-};
+}
