@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useSearchConsoleData } from '../hooks/useSearchConsoleData';
 import { Layout } from '../components/Layout';
 import { SiteMetricsRow } from '../components/dashboard/SiteMetricsRow';
@@ -10,7 +10,7 @@ export const Dashboard = () => {
   const { dateRange } = useFilters();
   const { startDate, endDate } = getDateRange(dateRange);
 
-  // Calculer la période précédente
+  // Calculate previous period
   const currentStartDate = new Date(startDate);
   const currentEndDate = new Date(endDate);
   const daysDiff = Math.ceil((currentEndDate.getTime() - currentStartDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -20,6 +20,17 @@ export const Dashboard = () => {
 
   const { data: currentData, isLoading, error } = useSearchConsoleData('site');
   const { data: previousData } = useSearchConsoleData('site', previousStartDate, previousEndDate);
+
+  // Sort sites by real-time users
+  const sortedSites = useMemo(() => {
+    if (!currentData?.rows) return [];
+    
+    return [...currentData.rows].sort((a, b) => {
+      const metricsA = a.metrics?.activeUsers || 0;
+      const metricsB = b.metrics?.activeUsers || 0;
+      return metricsB - metricsA; // Sort in descending order
+    });
+  }, [currentData?.rows]);
 
   return (
     <Layout>
@@ -38,7 +49,7 @@ export const Dashboard = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {currentData?.rows?.map((site, index) => {
+            {sortedSites.map((site, index) => {
               const previousSite = previousData?.rows?.find(
                 prev => prev.keys[0] === site.keys[0]
               );
