@@ -31,7 +31,7 @@ export const TopMetricsCard: React.FC<TopMetricsCardProps> = ({ title, data = []
     if (dimension === 'page') {
       try {
         const url = new URL(key);
-        return url.pathname;
+        return url.pathname || '/';
       } catch {
         return key;
       }

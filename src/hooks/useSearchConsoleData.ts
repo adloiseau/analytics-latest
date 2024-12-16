@@ -29,6 +29,7 @@ export const useSearchConsoleData = (
         throw new Error('Authentication required');
       }
 
+      // For site dimension, fetch data for all sites
       if (dimension === 'site') {
         const { siteEntry: sites } = await searchConsoleApi.fetchSites(accessToken);
         if (!sites?.length) return { rows: [], chartData: [] };
@@ -73,7 +74,37 @@ export const useSearchConsoleData = (
         };
       }
 
-      // ... reste du code inchangé ...
+      // For other dimensions, require a selected site
+      if (!selectedSite) {
+        throw new Error('No site selected');
+      }
+
+      const [dimensionResponse, timeResponse] = await Promise.all([
+        searchConsoleApi.fetchSearchAnalytics(accessToken, selectedSite, {
+          startDate,
+          endDate,
+          dimensions: [dimension],
+          rowLimit: 1000,
+        }),
+        searchConsoleApi.fetchSearchAnalytics(accessToken, selectedSite, {
+          startDate,
+          endDate,
+          dimensions: ['date'],
+          rowLimit: 1000,
+        })
+      ]);
+
+      const rows = dimensionResponse.rows || [];
+      const timeRows = timeResponse.rows || [];
+
+      const filteredRows = filterData(rows, searchQuery);
+      const deduplicatedRows = deduplicateTableData(filteredRows);
+      const chartData = prepareChartData(timeRows);
+
+      return { 
+        rows: deduplicatedRows,
+        chartData
+      };
     },
     {
       enabled: !!accessToken && !!isAuthenticated && (dimension === 'site' || !!selectedSite),

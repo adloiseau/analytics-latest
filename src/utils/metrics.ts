@@ -25,7 +25,8 @@ export const prepareChartData = (data: SearchAnalyticsRow[]) => {
     .map(row => ({
       date: row.keys[0],
       clicks: row.clicks,
-      impressions: row.impressions
+      impressions: row.impressions,
+      keys: row.keys
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
 };

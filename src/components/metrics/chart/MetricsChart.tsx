@@ -14,11 +14,13 @@ interface ChartDataPoint {
   date: string;
   clicks: number;
   impressions: number;
+  keys?: string[];
 }
 
 interface MetricsChartProps {
   data: ChartDataPoint[];
   title: string;
+  dimension?: 'page' | 'query';
 }
 
 const formatDate = (dateStr: string) => {
@@ -30,24 +32,27 @@ const formatDate = (dateStr: string) => {
   }
 };
 
-export const MetricsChart: React.FC<MetricsChartProps> = ({ data, title }) => {
+export const MetricsChart: React.FC<MetricsChartProps> = ({ data, title, dimension }) => {
   const { width } = useWindowSize();
   const { selectedItem } = useSelectedItem();
   const isMobile = width < 640;
 
   const formattedData = useMemo(() => {
+    if (!data?.length) return [];
+
     let filteredData = data;
-    if (selectedItem) {
+    if (selectedItem && dimension) {
       filteredData = data.filter(item => {
-        const key = item.date;
-        return key === selectedItem;
+        if (item.date === selectedItem) return true;
+        return false;
       });
     }
-    return filteredData?.map(item => ({
+
+    return filteredData.map(item => ({
       ...item,
       displayDate: formatDate(item.date)
-    })) || [];
-  }, [data, selectedItem]);
+    }));
+  }, [data, selectedItem, dimension]);
 
   if (!data?.length) {
     return (

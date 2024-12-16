@@ -5,6 +5,7 @@ import { TopMetricsCard } from '../components/TopMetricsCard';
 import { MetricsChart } from '../components/metrics/chart/MetricsChart';
 import { SiteSelector } from '../components/SiteSelector';
 import { SelectedItemProvider } from '../contexts/SelectedItemContext';
+import { DataTable } from '../components/DataTable';
 
 export const TopQueries: React.FC = () => {
   const { data, isLoading, error } = useSearchConsoleData('query');
@@ -49,9 +50,11 @@ export const TopQueries: React.FC = () => {
               <MetricsChart 
                 data={data?.chartData || []} 
                 title="Évolution du Trafic"
+                dimension="query"
               />
             </div>
           </div>
+          <DataTable data={data?.rows || []} dimension="query" />
         </div>
       </SelectedItemProvider>
     </Layout>
