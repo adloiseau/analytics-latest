@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, BarChart3, Users, Clock, Eye, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Search as SearchIcon, BarChart3, Users, Clock, Eye, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { SparklineChart } from '../metrics/SparklineChart';
 
 type MetricType = 'clicks' | 'impressions' | 'users' | 'pageViews' | 'duration' | 'bounce';
@@ -11,7 +11,7 @@ interface MetricConfig {
 }
 
 const metricConfigs: Record<MetricType, MetricConfig> = {
-  clicks: { icon: Search, label: 'Clics', color: '#3b82f6' },
+  clicks: { icon: SearchIcon, label: 'Clics', color: '#3b82f6' },
   impressions: { icon: BarChart3, label: 'Impressions', color: '#10b981' },
   users: { icon: Users, label: 'Utilisateurs', color: '#8b5cf6' },
   pageViews: { icon: Eye, label: 'Pages vues', color: '#f59e0b' },
@@ -40,9 +40,10 @@ export const MetricBlock: React.FC<MetricBlockProps> = ({
 
   return (
     <div className="relative bg-[#1a1b1e]/50 rounded-lg p-3 border border-gray-800/10 overflow-hidden group 
-                    hover:bg-[#1a1b1e]/70 transition-all duration-200 hover:border-gray-700/30">
-      <div className="relative z-10">
-        <div className="flex items-center justify-between">
+                    hover:bg-[#1a1b1e]/70 transition-all duration-300 hover:border-gray-700/30 hover:scale-[1.02]
+                    hover:shadow-lg h-[90px]">
+      <div className="relative z-10 flex flex-col h-full">
+        <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <Icon className="w-4 h-4" style={{ color: config.color }} />
             <span className="text-xs text-gray-400 group-hover:text-gray-300 transition-colors">
@@ -60,8 +61,10 @@ export const MetricBlock: React.FC<MetricBlockProps> = ({
             </div>
           )}
         </div>
-        <div className="text-lg font-semibold text-white mt-1">
-          {typeof value === 'number' ? value.toLocaleString() : value}
+        <div className="flex-1 flex items-center justify-center">
+          <span className="text-lg font-semibold text-white">
+            {typeof value === 'number' ? value.toLocaleString() : value}
+          </span>
         </div>
       </div>
       {sparklineData && (
