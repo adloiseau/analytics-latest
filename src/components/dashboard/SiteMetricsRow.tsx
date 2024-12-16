@@ -69,7 +69,7 @@ export const SiteMetricsRow: React.FC<SiteMetricsRowProps> = ({ site, previousPe
         </div>
 
         {/* Metrics Grid */}
-        <div className="grid grid-cols-5 gap-0.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-0.5">
           {/* Trafic Organique */}
           <div className="w-full">
             <MetricBlock
