@@ -3,12 +3,9 @@ import { Globe } from 'lucide-react';
 import { MetricBlock } from './MetricBlock';
 import { validateUrl, calculateTrend } from '../../utils/metrics';
 import { useGoogleAnalytics } from '../../hooks/useGoogleAnalytics';
-import { IndexedPagesChart } from '../metrics/IndexedPagesChart';
 import { useMetrics } from '../../hooks/useMetrics';
-import type { SearchAnalyticsRow } from '../../services/googleAuth/types';
 import { METRIC_DEFINITIONS } from '../../types/metrics';
-import { searchConsoleApi } from '../../services/googleAuth/api';
-import { useAuth } from '../../contexts/AuthContext';
+import type { SearchAnalyticsRow } from '../../services/googleAuth/types';
 
 interface SiteMetricsRowProps {
   site: SearchAnalyticsRow;
@@ -16,39 +13,41 @@ interface SiteMetricsRowProps {
 }
 
 export const SiteMetricsRow: React.FC<SiteMetricsRowProps> = ({ site, previousPeriodData }) => {
-  const { accessToken } = useAuth();
-  const [indexedPages, setIndexedPages] = React.useState({ total: 100, indexed: 80 });
-  const { metrics } = useGoogleAnalytics(site.keys[0]);
+  const { metrics, realtimeMetrics } = useGoogleAnalytics(site.keys[0]);
   const { data: siteMetrics } = useMetrics(site.keys[0]);
-
-  React.useEffect(() => {
-    if (accessToken && validateUrl(site.keys[0])) {
-      searchConsoleApi.fetchIndexedPages(accessToken, site.keys[0])
-        .then(setIndexedPages)
-        .catch(console.error);
-    }
-  }, [accessToken, site.keys[0]]);
 
   if (!validateUrl(site.keys[0])) return null;
 
   const hostname = new URL(site.keys[0]).hostname;
   const clicksTrend = calculateTrend(site.clicks, previousPeriodData?.clicks || 0);
   const impressionsTrend = calculateTrend(site.impressions, previousPeriodData?.impressions || 0);
-  const pageViewsTrend = calculateTrend(
-    metrics?.pageViews || 0,
-    metrics?.previousPeriod?.pageViews || 0
+  const usersTrend = calculateTrend(
+    metrics?.activeUsers || 0,
+    metrics?.previousPeriod?.activeUsers || 0
   );
 
+  // Get site favicon
+  const favicon = `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`;
+
   return (
-    <div className="bg-[#25262b]/50 rounded-lg p-4 border border-gray-800/10 hover:border-gray-700/30 
+    <div className="bg-[#25262b]/50 rounded-lg p-3 border border-gray-800/10 hover:border-gray-700/30 
                     transition-all duration-200">
-      <div className="flex items-center justify-between gap-4 mb-4">
-        <div className="flex items-center gap-3">
-          <Globe className="w-5 h-5 text-blue-400" />
-          <h3 className="text-lg font-medium text-white truncate">{hostname}</h3>
+      {/* Site Header */}
+      <div className="flex items-center justify-between gap-4 mb-3">
+        <div className="flex items-center gap-2">
+          <img 
+            src={favicon} 
+            alt={hostname} 
+            className="w-4 h-4 rounded-sm"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = Globe;
+            }}
+          />
+          <h3 className="text-base font-medium text-white truncate">{hostname}</h3>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="text-xs text-gray-400">Position</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-400">Pos</span>
           <span className="px-2 py-0.5 bg-[#1a1b1e] rounded text-sm font-medium text-white">
             {site.position.toFixed(1)}
           </span>
@@ -61,67 +60,63 @@ export const SiteMetricsRow: React.FC<SiteMetricsRowProps> = ({ site, previousPe
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-12 gap-3">
-        <div className="lg:col-span-2">
+      {/* All Metrics in One Row */}
+      <div className="grid grid-cols-12 gap-2">
+        {/* Search Console Metrics */}
+        <div className="col-span-1">
           <MetricBlock
             type="clicks"
             value={site.clicks}
             trend={clicksTrend}
-            trendValue={`${clicksTrend > 0 ? '+' : ''}${clicksTrend.toFixed(1)}%`}
+            label="CLC"
+            tooltip="Nombre de clics"
           />
         </div>
-        <div className="lg:col-span-2">
+        <div className="col-span-1">
           <MetricBlock
             type="impressions"
             value={site.impressions}
             trend={impressionsTrend}
-            trendValue={`${impressionsTrend > 0 ? '+' : ''}${impressionsTrend.toFixed(1)}%`}
+            label="IMP"
+            tooltip="Nombre d'impressions"
           />
         </div>
-        <div className="lg:col-span-2">
+
+        {/* Google Analytics Metrics */}
+        <div className="col-span-1">
           <MetricBlock
-            type="pageViews"
-            value={metrics?.pageViews || 0}
-            trend={pageViewsTrend}
-            trendValue={`${pageViewsTrend > 0 ? '+' : ''}${pageViewsTrend.toFixed(1)}%`}
+            type="custom"
+            label="30m"
+            value={realtimeMetrics?.activeUsers || 0}
+            color="#10b981"
+            tooltip="Visiteurs sur les 30 dernières minutes"
+          />
+        </div>
+        <div className="col-span-1">
+          <MetricBlock
+            type="custom"
+            label="7J"
+            value={metrics?.activeUsers || 0}
+            trend={usersTrend}
+            color="#6366f1"
+            tooltip="Visiteurs sur 7 jours"
           />
         </div>
 
-        <div className="lg:col-span-2">
-          <div className="flex items-center justify-between bg-[#1a1b1e]/50 rounded-lg p-3 border border-gray-800/10 h-full">
-            <div className="flex items-center gap-2">
-              <IndexedPagesChart 
-                totalPages={indexedPages.total} 
-                indexedPages={indexedPages.indexed} 
-              />
-              <div className="flex flex-col">
-                <span className="text-xs text-gray-400">Pages indexées</span>
-                <span className="text-sm font-medium text-white">
-                  {indexedPages.indexed}/{indexedPages.total}
-                </span>
-              </div>
-            </div>
+        {/* Supabase Metrics */}
+        {siteMetrics && Object.entries(METRIC_DEFINITIONS).map(([key, definition]) => (
+          <div key={key} className="col-span-1">
+            <MetricBlock
+              type="custom"
+              label={key}
+              value={siteMetrics[key]?.value || 0}
+              trend={siteMetrics[key]?.trend || 0}
+              color={definition.color}
+              tooltip={definition.description}
+            />
           </div>
-        </div>
+        ))}
       </div>
-
-      {siteMetrics && (
-        <div className="grid grid-cols-2 lg:grid-cols-8 gap-3 mt-3">
-          {Object.entries(METRIC_DEFINITIONS).map(([key, definition]) => (
-            <div key={key} className="lg:col-span-1">
-              <MetricBlock
-                type="custom"
-                label={definition.label}
-                value={siteMetrics[key]?.value || 0}
-                trend={siteMetrics[key]?.trend || 0}
-                trendValue={`${siteMetrics[key]?.trend > 0 ? '+' : ''}${(siteMetrics[key]?.trend || 0).toFixed(1)}%`}
-                color={definition.color}
-                tooltip={definition.description}
-              />
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 };
