@@ -1,8 +1,9 @@
 import React from 'react';
-import { Search as SearchIcon, BarChart3, Users, Clock, Eye, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Search, BarChart3, Users, Clock, Eye, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { SparklineChart } from '../metrics/SparklineChart';
+import { Tooltip } from '../common/Tooltip';
 
-type MetricType = 'clicks' | 'impressions' | 'users' | 'pageViews' | 'duration' | 'bounce';
+type MetricType = 'clicks' | 'impressions' | 'users' | 'pageViews' | 'duration' | 'bounce' | 'custom';
 
 interface MetricConfig {
   icon: any;
@@ -10,8 +11,8 @@ interface MetricConfig {
   color: string;
 }
 
-const metricConfigs: Record<MetricType, MetricConfig> = {
-  clicks: { icon: SearchIcon, label: 'Clics', color: '#3b82f6' },
+const metricConfigs: Record<Exclude<MetricType, 'custom'>, MetricConfig> = {
+  clicks: { icon: Search, label: 'Clics', color: '#3b82f6' },
   impressions: { icon: BarChart3, label: 'Impressions', color: '#10b981' },
   users: { icon: Users, label: 'Utilisateurs', color: '#8b5cf6' },
   pageViews: { icon: Eye, label: 'Pages vues', color: '#f59e0b' },
@@ -25,6 +26,9 @@ interface MetricBlockProps {
   sparklineData?: number[];
   trend?: number;
   trendValue?: string;
+  label?: string;
+  color?: string;
+  tooltip?: string;
 }
 
 export const MetricBlock: React.FC<MetricBlockProps> = ({ 
@@ -32,13 +36,18 @@ export const MetricBlock: React.FC<MetricBlockProps> = ({
   value, 
   sparklineData,
   trend = 0,
-  trendValue
+  trendValue,
+  label,
+  color,
+  tooltip
 }) => {
-  const config = metricConfigs[type];
+  const config = type === 'custom' 
+    ? { icon: BarChart3, label: label || '', color: color || '#3b82f6' }
+    : metricConfigs[type];
   const Icon = config.icon;
   const isPositiveTrend = trend >= 0;
 
-  return (
+  const content = (
     <div className="relative bg-[#1a1b1e]/50 rounded-lg p-3 border border-gray-800/10 overflow-hidden group 
                     hover:bg-[#1a1b1e]/70 transition-all duration-300 hover:border-gray-700/30 hover:scale-[1.02]
                     hover:shadow-lg h-[90px]">
@@ -47,7 +56,7 @@ export const MetricBlock: React.FC<MetricBlockProps> = ({
           <div className="flex items-center gap-2">
             <Icon className="w-4 h-4" style={{ color: config.color }} />
             <span className="text-xs text-gray-400 group-hover:text-gray-300 transition-colors">
-              {config.label}
+              {label || config.label}
             </span>
           </div>
           {trendValue && (
@@ -74,4 +83,8 @@ export const MetricBlock: React.FC<MetricBlockProps> = ({
       )}
     </div>
   );
+
+  return tooltip ? (
+    <Tooltip content={tooltip}>{content}</Tooltip>
+  ) : content;
 };

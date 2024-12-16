@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Globe, Users, Eye, Clock, ArrowUpRight, ArrowDownRight, Search as SearchIcon, BarChart3 } from 'lucide-react';
+import React from 'react';
+import { Globe } from 'lucide-react';
 import { MetricBlock } from './MetricBlock';
 import { validateUrl, calculateTrend } from '../../utils/metrics';
 import { useGoogleAnalytics } from '../../hooks/useGoogleAnalytics';
 import { IndexedPagesChart } from '../metrics/IndexedPagesChart';
+import { useMetrics } from '../../hooks/useMetrics';
 import type { SearchAnalyticsRow } from '../../services/googleAuth/types';
-import { useFilters } from '../../contexts/FilterContext';
+import { METRIC_DEFINITIONS } from '../../types/metrics';
 import { searchConsoleApi } from '../../services/googleAuth/api';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -16,10 +17,11 @@ interface SiteMetricsRowProps {
 
 export const SiteMetricsRow: React.FC<SiteMetricsRowProps> = ({ site, previousPeriodData }) => {
   const { accessToken } = useAuth();
-  const [indexedPages, setIndexedPages] = useState({ total: 100, indexed: 80 });
-  const { metrics, realtimeMetrics } = useGoogleAnalytics(site.keys[0]);
+  const [indexedPages, setIndexedPages] = React.useState({ total: 100, indexed: 80 });
+  const { metrics } = useGoogleAnalytics(site.keys[0]);
+  const { data: siteMetrics } = useMetrics(site.keys[0]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (accessToken && validateUrl(site.keys[0])) {
       searchConsoleApi.fetchIndexedPages(accessToken, site.keys[0])
         .then(setIndexedPages)
@@ -32,10 +34,6 @@ export const SiteMetricsRow: React.FC<SiteMetricsRowProps> = ({ site, previousPe
   const hostname = new URL(site.keys[0]).hostname;
   const clicksTrend = calculateTrend(site.clicks, previousPeriodData?.clicks || 0);
   const impressionsTrend = calculateTrend(site.impressions, previousPeriodData?.impressions || 0);
-  const usersTrend = calculateTrend(
-    metrics?.activeUsers || 0,
-    metrics?.previousPeriod?.activeUsers || 0
-  );
   const pageViewsTrend = calculateTrend(
     metrics?.pageViews || 0,
     metrics?.previousPeriod?.pageViews || 0
@@ -63,52 +61,67 @@ export const SiteMetricsRow: React.FC<SiteMetricsRowProps> = ({ site, previousPe
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
-        <MetricBlock
-          type="clicks"
-          value={site.clicks}
-          trend={clicksTrend}
-          trendValue={`${clicksTrend > 0 ? '+' : ''}${clicksTrend.toFixed(1)}%`}
-        />
-        <MetricBlock
-          type="impressions"
-          value={site.impressions}
-          trend={impressionsTrend}
-          trendValue={`${impressionsTrend > 0 ? '+' : ''}${impressionsTrend.toFixed(1)}%`}
-        />
-        <MetricBlock
-          type="users"
-          value={realtimeMetrics?.activeUsers || 0}
-          label="30 dernières min"
-        />
-        <MetricBlock
-          type="users"
-          value={metrics?.activeUsers || 0}
-          trend={usersTrend}
-          trendValue={`${usersTrend > 0 ? '+' : ''}${usersTrend.toFixed(1)}%`}
-          label="7 derniers jours"
-        />
-        <MetricBlock
-          type="pageViews"
-          value={metrics?.pageViews || 0}
-          trend={pageViewsTrend}
-          trendValue={`${pageViewsTrend > 0 ? '+' : ''}${pageViewsTrend.toFixed(1)}%`}
-        />
-        <div className="flex items-center justify-between bg-[#1a1b1e]/50 rounded-lg p-3 border border-gray-800/10">
-          <div className="flex items-center gap-2">
-            <IndexedPagesChart 
-              totalPages={indexedPages.total} 
-              indexedPages={indexedPages.indexed} 
-            />
-            <div className="flex flex-col">
-              <span className="text-xs text-gray-400">Pages indexées</span>
-              <span className="text-sm font-medium text-white">
-                {indexedPages.indexed}/{indexedPages.total}
-              </span>
+      <div className="grid grid-cols-2 lg:grid-cols-12 gap-3">
+        <div className="lg:col-span-2">
+          <MetricBlock
+            type="clicks"
+            value={site.clicks}
+            trend={clicksTrend}
+            trendValue={`${clicksTrend > 0 ? '+' : ''}${clicksTrend.toFixed(1)}%`}
+          />
+        </div>
+        <div className="lg:col-span-2">
+          <MetricBlock
+            type="impressions"
+            value={site.impressions}
+            trend={impressionsTrend}
+            trendValue={`${impressionsTrend > 0 ? '+' : ''}${impressionsTrend.toFixed(1)}%`}
+          />
+        </div>
+        <div className="lg:col-span-2">
+          <MetricBlock
+            type="pageViews"
+            value={metrics?.pageViews || 0}
+            trend={pageViewsTrend}
+            trendValue={`${pageViewsTrend > 0 ? '+' : ''}${pageViewsTrend.toFixed(1)}%`}
+          />
+        </div>
+
+        <div className="lg:col-span-2">
+          <div className="flex items-center justify-between bg-[#1a1b1e]/50 rounded-lg p-3 border border-gray-800/10 h-full">
+            <div className="flex items-center gap-2">
+              <IndexedPagesChart 
+                totalPages={indexedPages.total} 
+                indexedPages={indexedPages.indexed} 
+              />
+              <div className="flex flex-col">
+                <span className="text-xs text-gray-400">Pages indexées</span>
+                <span className="text-sm font-medium text-white">
+                  {indexedPages.indexed}/{indexedPages.total}
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {siteMetrics && (
+        <div className="grid grid-cols-2 lg:grid-cols-8 gap-3 mt-3">
+          {Object.entries(METRIC_DEFINITIONS).map(([key, definition]) => (
+            <div key={key} className="lg:col-span-1">
+              <MetricBlock
+                type="custom"
+                label={definition.label}
+                value={siteMetrics[key]?.value || 0}
+                trend={siteMetrics[key]?.trend || 0}
+                trendValue={`${siteMetrics[key]?.trend > 0 ? '+' : ''}${(siteMetrics[key]?.trend || 0).toFixed(1)}%`}
+                color={definition.color}
+                tooltip={definition.description}
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

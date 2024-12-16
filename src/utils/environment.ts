@@ -19,3 +19,32 @@ export const getBaseUrl = (): string => {
 export const getRedirectUri = (): string => {
   return `${getBaseUrl()}/auth/callback`;
 };
+
+/**
+ * Validate environment variables
+ */
+export const validateEnvVariables = () => {
+  const required = [
+    'VITE_SUPABASE_URL',
+    'VITE_SUPABASE_ANON_KEY',
+    'VITE_GOOGLE_CLIENT_ID',
+    'VITE_OAUTH_SCOPES'
+  ];
+
+  const missing = required.filter(key => !import.meta.env[key]);
+
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+};
+
+/**
+ * Get environment variable with validation
+ */
+export const getEnvVariable = (key: string): string => {
+  const value = import.meta.env[key];
+  if (!value) {
+    throw new Error(`Environment variable ${key} is required`);
+  }
+  return value;
+};
