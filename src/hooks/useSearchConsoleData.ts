@@ -5,6 +5,7 @@ import { useFilters } from '../contexts/FilterContext';
 import { searchConsoleApi } from '../services/googleAuth/api';
 import { getDateRange } from '../utils/dates';
 import { filterData, deduplicateTableData, prepareChartData } from '../utils/metrics';
+import { REFRESH_CONFIG } from '../config/refresh';
 import type { SearchAnalyticsRow } from '../services/googleAuth/types';
 
 type Dimension = 'page' | 'query' | 'site';
@@ -108,7 +109,8 @@ export const useSearchConsoleData = (
     },
     {
       enabled: !!accessToken && !!isAuthenticated && (dimension === 'site' || !!selectedSite),
-      staleTime: 5 * 60 * 1000,
+      staleTime: REFRESH_CONFIG.GSC_REFRESH_INTERVAL,
+      refetchInterval: REFRESH_CONFIG.GSC_REFRESH_INTERVAL,
       keepPreviousData: true,
       retry: 2,
     }

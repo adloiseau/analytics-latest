@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { analyticsApi } from '../services/googleAnalytics/api';
 import { useAuth } from '../contexts/AuthContext';
 import { GA_PROPERTY_IDS } from '../config/analytics.config';
+import { REFRESH_CONFIG } from '../config/refresh';
 import type { RealTimeMetrics } from '../types/analytics';
 
 export const useGoogleAnalytics = (websiteUrl: string) => {
@@ -42,9 +43,15 @@ export const useGoogleAnalytics = (websiteUrl: string) => {
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 30000);
+    
+    // Refresh intervals for different types of data
+    const metricsInterval = setInterval(fetchData, REFRESH_CONFIG.GA_REFRESH_INTERVAL);
+    const realtimeInterval = setInterval(fetchData, REFRESH_CONFIG.GA_REALTIME_REFRESH_INTERVAL);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(metricsInterval);
+      clearInterval(realtimeInterval);
+    };
   }, [websiteUrl, accessToken]);
 
   return { metrics, realtimeMetrics, loading, error };

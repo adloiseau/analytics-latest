@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { Tooltip } from '../common/Tooltip';
 import { formatMetric } from '../../utils/metrics';
+import { SparklineChart } from '../metrics/SparklineChart';
 
 interface MetricBlockProps {
   type: 'clicks' | 'impressions' | 'custom';
@@ -20,13 +21,27 @@ export const MetricBlock: React.FC<MetricBlockProps> = ({
   tooltip
 }) => {
   const isPositiveTrend = trend >= 0;
+  const trendData = Array.from({ length: 10 }, () => 
+    Math.random() * (isPositiveTrend ? 100 : -100)
+  );
 
   const content = (
-    <div className="bg-[#1a1b1e]/50 rounded-lg p-2 border border-gray-800/10 hover:bg-[#1a1b1e]/70 
-                   transition-all duration-200 hover:border-gray-700/30 h-[52px]">
-      <div className="flex flex-col h-full">
+    <div className="w-full h-[70px] relative overflow-hidden">
+      {/* Background Trend */}
+      <div className="absolute inset-0 bg-[#1a1b1e]/50 rounded-lg border border-gray-800/10">
+        <div className="absolute inset-0 opacity-5 group-hover:opacity-10 transition-opacity">
+          <SparklineChart 
+            data={trendData} 
+            color={color}
+            height={200}
+          />
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 flex flex-col h-full p-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-400" style={{ color }}>
+          <span className="text-xs text-gray-400 font-medium" style={{ color }}>
             {label}
           </span>
           {trend !== 0 && (
@@ -36,11 +51,11 @@ export const MetricBlock: React.FC<MetricBlockProps> = ({
               ) : (
                 <ArrowDownRight className="w-3 h-3" />
               )}
-              <span className="text-[10px]">{Math.abs(trend).toFixed(1)}%</span>
+              <span className="text-[10px] font-medium">{Math.abs(trend).toFixed(1)}%</span>
             </div>
           )}
         </div>
-        <span className="text-sm font-medium text-white mt-1">
+        <span className="text-xl font-semibold text-white mt-auto">
           {formatMetric(typeof value === 'number' ? value : parseInt(value))}
         </span>
       </div>
