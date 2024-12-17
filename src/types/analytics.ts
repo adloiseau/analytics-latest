@@ -1,15 +1,4 @@
-export interface AnalyticsConfig {
-  clientId: string;
-  scopes: string[];
-  apiKey: string;
-}
-
-export interface AnalyticsViewId {
-  websiteUrl: string;
-  viewId: string;
-}
-
-export interface RealTimeMetrics {
+export interface AnalyticsMetrics {
   activeUsers: number;
   pageViews: number;
   avgSessionDuration: number;
@@ -20,4 +9,9 @@ export interface RealTimeMetrics {
     avgSessionDuration: number;
     bounceRate: number;
   };
+}
+
+export interface MetricHistoryData {
+  date: string;
+  value: number;
 }

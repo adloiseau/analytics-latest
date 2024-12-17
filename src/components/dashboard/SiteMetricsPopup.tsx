@@ -21,7 +21,7 @@ export const SiteMetricsPopup: React.FC<SiteMetricsPopupProps> = ({
 
   // Filter out metrics that are already shown in the main view
   const additionalMetrics = Object.entries(METRIC_DEFINITIONS).filter(
-    ([key]) => !['TO'].includes(key)
+    ([key]) => ['AS', 'BL', 'RD', 'KD', 'VI', 'TF', 'CF'].includes(key)
   );
 
   return (
@@ -61,7 +61,6 @@ export const SiteMetricsPopup: React.FC<SiteMetricsPopupProps> = ({
         </div>
       </div>
 
-      {/* Popup d'historique des métriques */}
       {selectedMetric && (
         <MetricHistoryPopup
           siteUrl={site.keys[0]}

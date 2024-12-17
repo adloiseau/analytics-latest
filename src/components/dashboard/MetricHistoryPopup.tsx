@@ -1,12 +1,15 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { X } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useQuery } from 'react-query';
+import { useAuth } from '../../contexts/AuthContext';
 import { metricsService } from '../../services/supabase/metrics';
+import { searchConsoleApi } from '../../services/googleAuth/api';
 import { formatMetric } from '../../utils/metrics';
 import type { MetricDefinition } from '../../types/metrics';
+import type { MetricHistoryData } from '../../types/analytics';
 
 interface MetricHistoryPopupProps {
   siteUrl: string;
@@ -21,15 +24,52 @@ export const MetricHistoryPopup: React.FC<MetricHistoryPopupProps> = ({
   metricDefinition,
   onClose
 }) => {
-  const { data: history, isLoading } = useQuery(
+  const { accessToken } = useAuth();
+  const startDate = format(subDays(new Date(), 30), 'yyyy-MM-dd');
+  const endDate = format(new Date(), 'yyyy-MM-dd');
+
+  const { data: history, isLoading } = useQuery<MetricHistoryData[]>(
     ['metricHistory', siteUrl, metricKey],
-    () => metricsService.getMetricsHistory(siteUrl, metricKey, 30),
+    async () => {
+      switch (metricKey) {
+        case 'TO':
+        case 'AS':
+        case 'BL':
+        case 'RD':
+        case 'KD':
+        case 'VI':
+        case 'TF':
+        case 'CF':
+          const data = await metricsService.getMetricsHistory(siteUrl, metricKey, 30);
+          return data.map(item => ({
+            date: item.date,
+            value: item.value
+          }));
+
+        case 'clicks':
+        case 'impressions':
+          const response = await searchConsoleApi.fetchSearchAnalytics(accessToken!, siteUrl, {
+            startDate,
+            endDate,
+            dimensions: ['date'],
+            rowLimit: 30
+          });
+          return response.rows?.map(row => ({
+            date: row.keys[0],
+            value: row[metricKey as 'clicks' | 'impressions']
+          })) || [];
+
+        default:
+          return [];
+      }
+    },
     {
+      enabled: !!siteUrl && !!metricKey && !!accessToken,
       staleTime: 5 * 60 * 1000
     }
   );
 
-  const chartData = useMemo(() => {
+  const chartData = React.useMemo(() => {
     if (!history) return [];
     return [...history]
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
