@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { validateUrl } from '../../utils/metrics';
-import { useGoogleAnalytics } from '../../hooks/useGoogleAnalytics';
+import { useQuery } from 'react-query';
 import { useMetrics } from '../../hooks/useMetrics';
-import type { SearchAnalyticsRow } from '../../services/googleAuth/types';
+import { useGoogleAnalytics } from '../../hooks/useGoogleAnalytics';
+import { validateUrl } from '../../utils/metrics';
 import { SiteMetricsPopup } from './SiteMetricsPopup';
 import { MetricHistoryPopup } from './MetricHistoryPopup';
+import { AnalyticsHistoryPopup } from './AnalyticsHistoryPopup';
 import { METRIC_DEFINITIONS } from '../../types/metrics';
 import { SiteHeader } from './site/SiteHeader';
 import { MetricsGrid } from './metrics/MetricsGrid';
+import type { SearchAnalyticsRow } from '../../services/googleAuth/types';
 
 interface SiteMetricsRowProps {
   site: SearchAnalyticsRow;
@@ -24,6 +26,14 @@ export const SiteMetricsRow: React.FC<SiteMetricsRowProps> = ({ site, previousPe
 
   const hostname = new URL(site.keys[0]).hostname;
   const favicon = `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`;
+
+  const handleMetricClick = (metricKey: string) => {
+    if (['pageViews', 'activeUsers', 'realtimeUsers'].includes(metricKey) && metrics) {
+      setSelectedMetric(metricKey);
+    } else if (METRIC_DEFINITIONS[metricKey]) {
+      setSelectedMetric(metricKey);
+    }
+  };
 
   return (
     <>
@@ -42,7 +52,7 @@ export const SiteMetricsRow: React.FC<SiteMetricsRowProps> = ({ site, previousPe
           previousPeriodData={previousPeriodData}
           siteMetrics={siteMetrics}
           analyticsMetrics={metrics}
-          onMetricClick={setSelectedMetric}
+          onMetricClick={handleMetricClick}
         />
       </div>
 
@@ -54,7 +64,15 @@ export const SiteMetricsRow: React.FC<SiteMetricsRowProps> = ({ site, previousPe
         />
       )}
 
-      {selectedMetric && METRIC_DEFINITIONS[selectedMetric] && (
+      {selectedMetric && ['pageViews', 'activeUsers', 'realtimeUsers'].includes(selectedMetric) && metrics && (
+        <AnalyticsHistoryPopup
+          metricKey={selectedMetric as 'pageViews' | 'activeUsers' | 'realtimeUsers'}
+          analyticsMetrics={metrics}
+          onClose={() => setSelectedMetric(null)}
+        />
+      )}
+
+      {selectedMetric && METRIC_DEFINITIONS[selectedMetric] && !['pageViews', 'activeUsers', 'realtimeUsers'].includes(selectedMetric) && (
         <MetricHistoryPopup
           siteUrl={site.keys[0]}
           metricKey={selectedMetric}
