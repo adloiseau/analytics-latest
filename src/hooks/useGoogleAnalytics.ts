@@ -9,10 +9,13 @@ export function useGoogleAnalytics(websiteUrl: string) {
   const [metrics, setMetrics] = useState<RealTimeMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { accessToken } = useAuth();
+  const { accessToken, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    if (!accessToken || !websiteUrl) return;
+    if (!isAuthenticated || !accessToken || !websiteUrl) {
+      setLoading(false);
+      return;
+    }
 
     const hostname = new URL(websiteUrl).hostname;
     const propertyId = GA_PROPERTY_IDS[hostname];
@@ -25,21 +28,12 @@ export function useGoogleAnalytics(websiteUrl: string) {
 
     const fetchData = async () => {
       try {
-        const [metricsData, realtimeData] = await Promise.all([
-          analyticsApi.getMetricsData(propertyId, accessToken),
-          analyticsApi.getRealTimeData(propertyId, accessToken)
-        ]);
-        
-        // Ajouter l'historique des métriques
-        const enrichedMetrics = {
-          ...metricsData,
-          pageViewsHistory: metricsData.pageViewsHistory || [],
-          activeUsersHistory: metricsData.activeUsersHistory || []
-        };
-        
-        setMetrics(enrichedMetrics);
+        setLoading(true);
+        const metricsData = await analyticsApi.getMetricsData(propertyId, accessToken);
+        setMetrics(metricsData);
         setError(null);
       } catch (err) {
+        console.error('Error fetching analytics data:', err);
         setError('Erreur lors de la récupération des données Google Analytics');
       } finally {
         setLoading(false);
@@ -55,7 +49,7 @@ export function useGoogleAnalytics(websiteUrl: string) {
       clearInterval(metricsInterval);
       clearInterval(realtimeInterval);
     };
-  }, [websiteUrl, accessToken]);
+  }, [websiteUrl, accessToken, isAuthenticated]);
 
   return { metrics, loading, error };
 }

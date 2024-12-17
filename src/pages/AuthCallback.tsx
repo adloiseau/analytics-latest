@@ -1,24 +1,36 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { googleAuthClient } from '../services/googleAuth/client';
 
 export const AuthCallback: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    try {
-      if (window.location.hash) {
-        googleAuthClient.handleCallback(window.location.hash);
+    const handleAuth = async () => {
+      try {
+        const code = searchParams.get('code');
+        const state = searchParams.get('state');
+        
+        if (!code) {
+          throw new Error('No authorization code received');
+        }
+
+        if (state !== localStorage.getItem('gsc_auth_state')) {
+          throw new Error('Invalid state parameter');
+        }
+
+        await googleAuthClient.handleCallback(code);
         navigate('/');
-      } else {
-        setError('No authentication data received');
+      } catch (error) {
+        console.error('Authentication error:', error);
+        setError('Authentication failed');
       }
-    } catch (error) {
-      console.error('Authentication error:', error);
-      setError('Authentication failed');
-    }
-  }, [navigate]);
+    };
+
+    handleAuth();
+  }, [navigate, searchParams]);
 
   if (error) {
     return (

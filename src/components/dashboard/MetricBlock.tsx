@@ -26,18 +26,12 @@ export const MetricBlock: React.FC<MetricBlockProps> = ({
 }) => {
   const { dateRange } = useFilters();
   
-  console.log(`MetricBlock ${label}:`, { historicalData, sparklineData });
-
-  // Calculate trend only if we have sufficient historical data
   const trend = React.useMemo(() => {
     if (!historicalData || historicalData.length < 2) {
-      console.log(`No historical data for trend calculation: ${label}`);
       return null;
     }
-    const calculatedTrend = calculateTrendForRange(historicalData, dateRange);
-    console.log(`Final trend for ${label} :`, calculatedTrend);
-    return calculatedTrend;
-  }, [historicalData, dateRange, label]);
+    return calculateTrendForRange(historicalData, dateRange);
+  }, [historicalData, dateRange]);
 
   const content = (
     <div className="w-full h-[70px] relative overflow-hidden">

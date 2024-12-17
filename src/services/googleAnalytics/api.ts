@@ -1,5 +1,4 @@
 import { RealTimeMetrics } from '../../types/analytics';
-import { format, subDays } from 'date-fns';
 
 export const analyticsApi = {
   async getMetricsData(propertyId: string, accessToken: string): Promise<RealTimeMetrics> {
@@ -25,6 +24,10 @@ export const analyticsApi = {
           })
         }
       );
+
+      if (!historicalResponse.ok) {
+        throw new Error('Failed to fetch historical data');
+      }
 
       const historicalData = await historicalResponse.json();
       
@@ -61,13 +64,42 @@ export const analyticsApi = {
         }
       );
 
+      if (!response.ok) {
+        throw new Error('Failed to fetch current data');
+      }
+
       const data = await response.json();
       const currentPeriod = data.rows?.[0]?.metricValues;
       const previousPeriod = data.rows?.[1]?.metricValues;
 
+      // Récupérer les données en temps réel (30 dernières minutes)
+      const realtimeResponse = await fetch(
+        `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runRealtimeReport`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            metrics: [
+              { name: 'activeUsers' }
+            ]
+          })
+        }
+      );
+
+      if (!realtimeResponse.ok) {
+        throw new Error('Failed to fetch realtime data');
+      }
+
+      const realtimeData = await realtimeResponse.json();
+      const realtimeUsers = parseInt(realtimeData.rows?.[0]?.metricValues?.[0]?.value || '0');
+
       return {
         activeUsers: parseInt(currentPeriod?.[0]?.value || '0'),
         pageViews: parseInt(currentPeriod?.[1]?.value || '0'),
+        realtimeUsers,
         previousPeriod: {
           activeUsers: parseInt(previousPeriod?.[0]?.value || '0'),
           pageViews: parseInt(previousPeriod?.[1]?.value || '0')
@@ -78,7 +110,5 @@ export const analyticsApi = {
     } catch (error) {
       throw error;
     }
-  },
-
-  // ... reste du code inchangé
+  }
 };

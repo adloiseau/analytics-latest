@@ -8,13 +8,11 @@ export const calculateTrendForRange = (
   dateRange: DateRange
 ): number | null => {
   if (!data || data.length < 2) {
-    console.log('Insufficient data for trend calculation');
     return null;
   }
 
   // Sort data by date
   const sortedData = [...data].sort((a, b) => a.date.localeCompare(b.date));
-  console.log('Raw data:', sortedData);
 
   // Get date range boundaries
   const { startDate, endDate } = getDateRange(dateRange);
@@ -25,9 +23,6 @@ export const calculateTrendForRange = (
   const daysDiff = Math.ceil((currentEnd.getTime() - currentStart.getTime()) / (1000 * 60 * 60 * 24));
   const previousStart = startOfDay(subDays(currentStart, daysDiff));
   const previousEnd = endOfDay(subDays(currentEnd, daysDiff));
-
-  console.log('Current period:', currentStart.toISOString(), 'to', currentEnd.toISOString());
-  console.log('Previous period:', previousStart.toISOString(), 'to', previousEnd.toISOString());
 
   // Filter data for current and previous periods
   const currentPeriodData = sortedData.filter(item => {
@@ -40,24 +35,15 @@ export const calculateTrendForRange = (
     return date >= previousStart && date < currentStart;
   });
 
-  console.log('Current period data:', currentPeriodData);
-  console.log('Previous period data:', previousPeriodData);
+  // Return null if we don't have data for both periods
+  if (currentPeriodData.length === 0 || previousPeriodData.length === 0) {
+    return null;
+  }
 
   // Calculate sums for both periods
   const currentSum = currentPeriodData.reduce((sum, item) => sum + item.value, 0);
   const previousSum = previousPeriodData.reduce((sum, item) => sum + item.value, 0);
 
-  console.log('Current sum:', currentSum);
-  console.log('Previous sum:', previousSum);
-
-  // Return null if we don't have data for both periods
-  if (currentPeriodData.length === 0 || previousPeriodData.length === 0) {
-    console.log('Missing data for one or both periods');
-    return null;
-  }
-
   // Calculate trend percentage
-  const trend = ((currentSum - previousSum) / previousSum) * 100;
-  console.log('Calculated trend:', trend);
-  return trend;
+  return ((currentSum - previousSum) / previousSum) * 100;
 };

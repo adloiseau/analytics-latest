@@ -1,6 +1,7 @@
 export interface AnalyticsMetrics {
   activeUsers: number;
   pageViews: number;
+  realtimeUsers: number;
   previousPeriod?: {
     activeUsers: number;
     pageViews: number;
@@ -9,6 +10,4 @@ export interface AnalyticsMetrics {
   activeUsersHistory?: Array<{ date: string; value: number }>;
 }
 
-export interface RealTimeMetrics extends AnalyticsMetrics {
-  // ... autres propriétés existantes
-}
+export interface RealTimeMetrics extends AnalyticsMetrics {}

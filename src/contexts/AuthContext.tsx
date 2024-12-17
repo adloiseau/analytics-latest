@@ -5,6 +5,7 @@ import type { AuthState } from '../services/googleAuth/types';
 interface AuthContextType extends AuthState {
   login: () => void;
   logout: () => void;
+  isInitialized: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -14,15 +15,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isAuthenticated: false,
     accessToken: null,
   });
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    const token = googleAuthClient.getAccessToken();
-    if (token) {
-      setAuthState({
-        isAuthenticated: true,
-        accessToken: token,
-      });
-    }
+    const initAuth = async () => {
+      try {
+        const token = googleAuthClient.getAccessToken();
+        if (token) {
+          setAuthState({
+            isAuthenticated: true,
+            accessToken: token,
+          });
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+      } finally {
+        setIsInitialized(true);
+      }
+    };
+
+    initAuth();
   }, []);
 
   const login = () => {
@@ -38,7 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ ...authState, login, logout }}>
+    <AuthContext.Provider value={{ ...authState, isInitialized, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
