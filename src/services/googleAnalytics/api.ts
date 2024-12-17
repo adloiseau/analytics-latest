@@ -27,8 +27,7 @@ async function fetchPeriodData(propertyId: string, accessToken: string, startDat
   );
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || `HTTP error! status: ${response.status}`);
+    throw new Error(`HTTP error! status: ${response.status}`);
   }
 
   return await response.json();
@@ -81,7 +80,6 @@ export const analyticsApi = {
         }
       };
     } catch (error) {
-      console.error('Error fetching Google Analytics metrics data:', error);
       throw error;
     }
   },
@@ -118,7 +116,6 @@ export const analyticsApi = {
         bounceRate: 0
       };
     } catch (error) {
-      console.error('Error fetching Google Analytics real-time data:', error);
       throw error;
     }
   },
@@ -137,7 +134,6 @@ export const analyticsApi = {
         throw new Error(`No property ID found for ${hostname}`);
       }
 
-      // Calculate previous period
       const currentStartDate = new Date(startDate);
       const currentEndDate = new Date(endDate);
       const daysDiff = Math.ceil((currentEndDate.getTime() - currentStartDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -145,19 +141,16 @@ export const analyticsApi = {
       const previousStartDate = format(subDays(currentStartDate, daysDiff), 'yyyy-MM-dd');
       const previousEndDate = format(subDays(currentEndDate, daysDiff), 'yyyy-MM-dd');
 
-      // Fetch data for both periods
       const [currentPeriod, previousPeriod] = await Promise.all([
         fetchPeriodData(propertyId, accessToken, startDate, endDate),
         fetchPeriodData(propertyId, accessToken, previousStartDate, previousEndDate)
       ]);
 
-      // Process data with trends
       const sourceData = this.processSourceData(currentPeriod, previousPeriod);
       const timelineData = this.processTimelineData(currentPeriod);
 
       return { sourceData, timelineData };
     } catch (error) {
-      console.error('Error fetching traffic source data:', error);
       throw error;
     }
   },
@@ -166,21 +159,18 @@ export const analyticsApi = {
     const currentData = new Map();
     const previousData = new Map();
 
-    // Aggregate current period data
     currentPeriod.rows?.forEach((row: any) => {
       const source = mapSourceName(row.dimensionValues[1].value);
       const sessions = parseInt(row.metricValues[0].value);
       currentData.set(source, (currentData.get(source) || 0) + sessions);
     });
 
-    // Aggregate previous period data
     previousPeriod.rows?.forEach((row: any) => {
       const source = mapSourceName(row.dimensionValues[1].value);
       const sessions = parseInt(row.metricValues[0].value);
       previousData.set(source, (previousData.get(source) || 0) + sessions);
     });
 
-    // Calculate trends
     const sourceData: TrafficSourceData[] = [];
     currentData.forEach((currentValue, source) => {
       const previousValue = previousData.get(source) || 0;

@@ -11,6 +11,7 @@ interface MetricBlockProps {
   label?: string;
   color?: string;
   tooltip?: string;
+  sparklineData?: number[];
 }
 
 export const MetricBlock: React.FC<MetricBlockProps> = ({ 
@@ -18,27 +19,40 @@ export const MetricBlock: React.FC<MetricBlockProps> = ({
   trend = 0,
   label,
   color = '#3b82f6',
-  tooltip
+  tooltip,
+  sparklineData
 }) => {
   const isPositiveTrend = trend >= 0;
-  const trendData = Array.from({ length: 10 }, () => 
-    Math.random() * (isPositiveTrend ? 100 : -100)
-  );
+  
+  // Generate realistic trend data if not provided
+  const displayData = React.useMemo(() => {
+    if (sparklineData && sparklineData.length > 0) {
+      return sparklineData;
+    }
+
+    const baseValue = typeof value === 'number' ? value : parseInt(value);
+    const variance = baseValue * 0.1; // 10% variance
+    
+    return Array.from({ length: 10 }, (_, i) => {
+      const progress = i / 9;
+      const randomVariance = (Math.random() - 0.5) * variance;
+      const trendEffect = isPositiveTrend ? progress : -progress;
+      return baseValue * (1 + trendEffect * 0.2) + randomVariance;
+    });
+  }, [value, isPositiveTrend, sparklineData]);
 
   const content = (
     <div className="w-full h-[70px] relative overflow-hidden">
-      {/* Background Trend */}
       <div className="absolute inset-0 bg-[#1a1b1e]/50 rounded-lg border border-gray-800/10">
-        <div className="absolute inset-0 opacity-5 group-hover:opacity-10 transition-opacity">
+        <div className="absolute inset-0 opacity-20 group-hover:opacity-30 transition-opacity">
           <SparklineChart 
-            data={trendData} 
+            data={displayData} 
             color={color}
-            height={200}
+            height={70}
           />
         </div>
       </div>
 
-      {/* Content */}
       <div className="relative z-10 flex flex-col h-full p-2">
         <div className="flex items-center justify-between">
           <span className="text-xs text-gray-400 font-medium" style={{ color }}>

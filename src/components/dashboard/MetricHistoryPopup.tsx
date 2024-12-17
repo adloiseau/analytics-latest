@@ -1,15 +1,17 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { format, parseISO, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useQuery } from 'react-query';
 import { useAuth } from '../../contexts/AuthContext';
+import { useFilters } from '../../contexts/FilterContext';
 import { metricsService } from '../../services/supabase/metrics';
 import { searchConsoleApi } from '../../services/googleAuth/api';
 import { formatMetric } from '../../utils/metrics';
+import { DateRangeSelector } from '../DateRangeSelector';
+import { getDateRange } from '../../utils/dates';
 import type { MetricDefinition } from '../../types/metrics';
-import type { MetricHistoryData } from '../../types/analytics';
 
 interface MetricHistoryPopupProps {
   siteUrl: string;
@@ -25,59 +27,89 @@ export const MetricHistoryPopup: React.FC<MetricHistoryPopupProps> = ({
   onClose
 }) => {
   const { accessToken } = useAuth();
-  const startDate = format(subDays(new Date(), 30), 'yyyy-MM-dd');
-  const endDate = format(new Date(), 'yyyy-MM-dd');
+  const { dateRange, setDateRange } = useFilters();
+  const { startDate, endDate } = getDateRange(dateRange);
 
-  const { data: history, isLoading } = useQuery<MetricHistoryData[]>(
-    ['metricHistory', siteUrl, metricKey],
+  // Calculate previous period dates
+  const currentStartDate = parseISO(startDate);
+  const currentEndDate = parseISO(endDate);
+  const daysDiff = Math.ceil((currentEndDate.getTime() - currentStartDate.getTime()) / (1000 * 60 * 60 * 24));
+  const previousStartDate = format(subDays(currentStartDate, daysDiff), 'yyyy-MM-dd');
+  const previousEndDate = format(subDays(currentEndDate, daysDiff), 'yyyy-MM-dd');
+
+  const { data: currentPeriod, isLoading: isCurrentLoading } = useQuery(
+    ['metricHistory', siteUrl, metricKey, startDate, endDate],
     async () => {
-      switch (metricKey) {
-        case 'TO':
-        case 'AS':
-        case 'BL':
-        case 'RD':
-        case 'KD':
-        case 'VI':
-        case 'TF':
-        case 'CF':
-          const data = await metricsService.getMetricsHistory(siteUrl, metricKey, 30);
-          return data.map(item => ({
-            date: item.date,
-            value: item.value
-          }));
-
-        case 'clicks':
-        case 'impressions':
-          const response = await searchConsoleApi.fetchSearchAnalytics(accessToken!, siteUrl, {
-            startDate,
-            endDate,
-            dimensions: ['date'],
-            rowLimit: 30
-          });
-          return response.rows?.map(row => ({
-            date: row.keys[0],
-            value: row[metricKey as 'clicks' | 'impressions']
-          })) || [];
-
-        default:
-          return [];
+      if (metricKey === 'clicks' || metricKey === 'impressions') {
+        const response = await searchConsoleApi.fetchSearchAnalytics(accessToken!, siteUrl, {
+          startDate,
+          endDate,
+          dimensions: ['date'],
+          rowLimit: 1000
+        });
+        return response.rows?.map(row => ({
+          date: row.keys[0],
+          value: row[metricKey]
+        })) || [];
       }
+      
+      const days = dateRange === '24h' ? 2 : 
+                  dateRange === '7d' ? 7 : 
+                  dateRange === '28d' ? 28 : 90;
+                  
+      const metrics = await metricsService.getMetricsHistory(siteUrl, metricKey, days);
+      return metrics.map(metric => ({
+        date: metric.date,
+        value: metric.value
+      }));
     },
     {
-      enabled: !!siteUrl && !!metricKey && !!accessToken,
-      staleTime: 5 * 60 * 1000
+      enabled: !!accessToken || !['clicks', 'impressions'].includes(metricKey)
     }
   );
 
+  const { data: previousPeriod, isLoading: isPreviousLoading } = useQuery(
+    ['metricHistory', siteUrl, metricKey, previousStartDate, previousEndDate],
+    async () => {
+      if (metricKey === 'clicks' || metricKey === 'impressions') {
+        const response = await searchConsoleApi.fetchSearchAnalytics(accessToken!, siteUrl, {
+          startDate: previousStartDate,
+          endDate: previousEndDate,
+          dimensions: ['date'],
+          rowLimit: 1000
+        });
+        return response.rows?.map(row => ({
+          date: format(subDays(parseISO(row.keys[0]), -daysDiff), 'yyyy-MM-dd'),
+          previousValue: row[metricKey]
+        })) || [];
+      }
+      return [];
+    },
+    {
+      enabled: !!accessToken && ['clicks', 'impressions'].includes(metricKey)
+    }
+  );
+
+  const isLoading = isCurrentLoading || isPreviousLoading;
+
   const chartData = React.useMemo(() => {
-    if (!history) return [];
-    return [...history]
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .map(item => ({
-        date: item.date,
-        value: item.value
-      }));
-  }, [history]);
+    if (!currentPeriod) return [];
+
+    const mergedData = [...currentPeriod];
+    
+    if (previousPeriod?.length) {
+      previousPeriod.forEach(prev => {
+        const index = mergedData.findIndex(curr => curr.date === prev.date);
+        if (index !== -1) {
+          mergedData[index] = { ...mergedData[index], previousValue: prev.previousValue };
+        } else {
+          mergedData.push(prev);
+        }
+      });
+    }
+
+    return mergedData.sort((a, b) => a.date.localeCompare(b.date));
+  }, [currentPeriod, previousPeriod]);
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
@@ -89,10 +121,15 @@ export const MetricHistoryPopup: React.FC<MetricHistoryPopupProps> = ({
           <X className="w-5 h-5" />
         </button>
 
-        <h2 className="text-lg font-semibold text-white mb-1">
-          Historique - {metricDefinition.label}
-        </h2>
-        <p className="text-sm text-gray-400 mb-6">{metricDefinition.description}</p>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-lg font-semibold text-white mb-1">
+              Historique - {metricDefinition.label}
+            </h2>
+            <p className="text-sm text-gray-400">{metricDefinition.description}</p>
+          </div>
+          <DateRangeSelector selectedRange={dateRange} onChange={setDateRange} />
+        </div>
 
         <div className="h-[400px] w-full">
           {isLoading ? (
@@ -119,25 +156,56 @@ export const MetricHistoryPopup: React.FC<MetricHistoryPopupProps> = ({
                     if (active && payload && payload.length) {
                       return (
                         <div className="bg-[#1a1b1e]/95 backdrop-blur-sm p-3 rounded-lg shadow-xl border border-gray-800/50">
-                          <p className="text-gray-400 text-xs mb-1">
+                          <p className="text-gray-400 text-xs mb-2">
                             {format(parseISO(label), 'dd MMMM yyyy', { locale: fr })}
                           </p>
-                          <p className="text-white text-sm">
-                            {metricDefinition.label}: {formatMetric(payload[0].value)}
-                          </p>
+                          {payload.map((entry: any, index: number) => (
+                            <div key={index} className="flex items-center gap-2 text-sm">
+                              <div 
+                                className="w-2 h-2 rounded-full"
+                                style={{ backgroundColor: entry.color }}
+                              />
+                              <span className="text-gray-300">{entry.name}:</span>
+                              <span className="text-white font-medium">
+                                {formatMetric(entry.value)}
+                              </span>
+                            </div>
+                          ))}
                         </div>
                       );
                     }
                     return null;
                   }}
                 />
+                <Legend 
+                  verticalAlign="top"
+                  height={36}
+                  formatter={(value) => (
+                    <span className="text-gray-300">{value}</span>
+                  )}
+                />
                 <Line
+                  name="Période actuelle"
                   type="monotone"
                   dataKey="value"
                   stroke={metricDefinition.color}
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                   dot={{ r: 4, strokeWidth: 2 }}
+                  activeDot={{ r: 6, strokeWidth: 2 }}
                 />
+                {previousPeriod && previousPeriod.length > 0 && (
+                  <Line
+                    name="Période précédente"
+                    type="monotone"
+                    dataKey="previousValue"
+                    stroke="#4B5563"
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    dot={{ r: 3, strokeWidth: 2, fill: '#4B5563' }}
+                    activeDot={{ r: 5, strokeWidth: 2 }}
+                    opacity={0.7}
+                  />
+                )}
               </LineChart>
             </ResponsiveContainer>
           ) : (
