@@ -2,7 +2,8 @@ import React from 'react';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { Tooltip } from '../common/Tooltip';
 import { formatMetric } from '../../utils/metrics';
-import { MetricSparkline } from '../metrics/MetricSparkline';
+import { SparklineGSC } from '../metrics/SparklineGSC';
+import { SparklineGA } from '../metrics/SparklineGA';
 import { calculateTrendForRange } from '../../utils/metrics/trends';
 import { useFilters } from '../../contexts/FilterContext';
 
@@ -14,6 +15,7 @@ interface MetricBlockProps {
   tooltip?: string;
   sparklineData?: number[];
   historicalData?: Array<{ date: string; value: number }>;
+  isGAMetric?: boolean;
 }
 
 export const MetricBlock: React.FC<MetricBlockProps> = ({ 
@@ -22,7 +24,8 @@ export const MetricBlock: React.FC<MetricBlockProps> = ({
   color = '#3b82f6',
   tooltip,
   sparklineData,
-  historicalData
+  historicalData,
+  isGAMetric = false
 }) => {
   const { dateRange } = useFilters();
   
@@ -36,9 +39,14 @@ export const MetricBlock: React.FC<MetricBlockProps> = ({
   const content = (
     <div className="w-full h-[70px] relative overflow-hidden">
       <div className="absolute inset-0 bg-[#1a1b1e]/50 rounded-lg border border-gray-800/10">
-        {sparklineData && sparklineData.length > 0 && (
+        {sparklineData && sparklineData.length > 0 && !isGAMetric && (
           <div className="absolute inset-0 opacity-20 group-hover:opacity-30 transition-opacity">
-            <MetricSparkline data={sparklineData} color={color} />
+            <SparklineGSC data={sparklineData} color={color} />
+          </div>
+        )}
+        {historicalData && historicalData.length > 0 && isGAMetric && (
+          <div className="absolute inset-0 opacity-20 group-hover:opacity-30 transition-opacity">
+            <SparklineGA data={historicalData} color={color} />
           </div>
         )}
       </div>

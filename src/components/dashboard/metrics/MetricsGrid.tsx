@@ -6,7 +6,6 @@ import { searchConsoleApi } from '../../../services/googleAuth/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useFilters } from '../../../contexts/FilterContext';
 import { getDateRange } from '../../../utils/dates';
-import { subDays, format } from 'date-fns';
 import type { SearchAnalyticsRow } from '../../../services/googleAuth/types';
 import type { AnalyticsMetrics } from '../../../types/analytics';
 
@@ -20,7 +19,6 @@ interface MetricsGridProps {
 
 export const MetricsGrid: React.FC<MetricsGridProps> = ({
   site,
-  previousPeriodData,
   siteMetrics,
   analyticsMetrics,
   onMetricClick
@@ -29,44 +27,24 @@ export const MetricsGrid: React.FC<MetricsGridProps> = ({
   const { dateRange } = useFilters();
   const { startDate, endDate } = getDateRange(dateRange);
 
-  // Calculate previous period dates
-  const currentStartDate = new Date(startDate);
-  const currentEndDate = new Date(endDate);
-  const daysDiff = Math.ceil((currentEndDate.getTime() - currentStartDate.getTime()) / (1000 * 60 * 60 * 24));
-  const previousStartDate = format(subDays(currentStartDate, daysDiff), 'yyyy-MM-dd');
-  const previousEndDate = format(subDays(currentEndDate, daysDiff), 'yyyy-MM-dd');
-
-  // Fetch historical data for current and previous periods
+  // Fetch historical data for Search Console metrics
   const { data: searchConsoleHistory } = useQuery(
     ['searchConsoleHistory', site.keys[0], startDate, endDate],
     async () => {
-      const [currentPeriod, previousPeriod] = await Promise.all([
-        searchConsoleApi.fetchSearchAnalytics(accessToken!, site.keys[0], {
-          startDate,
-          endDate,
-          dimensions: ['date'],
-          rowLimit: 1000
-        }),
-        searchConsoleApi.fetchSearchAnalytics(accessToken!, site.keys[0], {
-          startDate: previousStartDate,
-          endDate: previousEndDate,
-          dimensions: ['date'],
-          rowLimit: 1000
-        })
-      ]);
+      if (!accessToken) return null;
+      
+      const response = await searchConsoleApi.fetchSearchAnalytics(accessToken, site.keys[0], {
+        startDate,
+        endDate,
+        dimensions: ['date'],
+        rowLimit: 1000
+      });
 
-      return {
-        current: currentPeriod.rows?.map(row => ({
-          date: row.keys[0],
-          clicks: row.clicks,
-          impressions: row.impressions
-        })) || [],
-        previous: previousPeriod.rows?.map(row => ({
-          date: row.keys[0],
-          clicks: row.clicks,
-          impressions: row.impressions
-        })) || []
-      };
+      return response.rows?.map(row => ({
+        date: row.keys[0],
+        clicks: row.clicks,
+        impressions: row.impressions
+      })) || [];
     },
     {
       enabled: !!accessToken && !!site.keys[0],
@@ -90,37 +68,9 @@ export const MetricsGrid: React.FC<MetricsGridProps> = ({
     }
   );
 
-  // Prepare historical data for each metric
-  const clicksHistory = searchConsoleHistory?.current.map(row => ({
-    date: row.date,
-    value: row.clicks
-  }));
-
-  const impressionsHistory = searchConsoleHistory?.current.map(row => ({
-    date: row.date,
-    value: row.impressions
-  }));
-
-  // Include previous period data
-  const allClicksHistory = [
-    ...(searchConsoleHistory?.previous || []).map(row => ({
-      date: row.date,
-      value: row.clicks
-    })),
-    ...(clicksHistory || [])
-  ];
-
-  const allImpressionsHistory = [
-    ...(searchConsoleHistory?.previous || []).map(row => ({
-      date: row.date,
-      value: row.impressions
-    })),
-    ...(impressionsHistory || [])
-  ];
-
-  // Prepare sparkline data
-  const clicksSparkline = clicksHistory?.map(item => item.value) || [];
-  const impressionsSparkline = impressionsHistory?.map(item => item.value) || [];
+  // Prepare sparkline data for GSC metrics
+  const clicksSparkline = searchConsoleHistory?.map(item => item.clicks) || [];
+  const impressionsSparkline = searchConsoleHistory?.map(item => item.impressions) || [];
   const organicSparkline = organicHistory?.map(item => item.value) || [];
 
   return (
@@ -133,6 +83,7 @@ export const MetricsGrid: React.FC<MetricsGridProps> = ({
           color="#3b82f6"
           sparklineData={organicSparkline}
           historicalData={organicHistory}
+          isGAMetric={false}
         />
       </div>
 
@@ -143,7 +94,8 @@ export const MetricsGrid: React.FC<MetricsGridProps> = ({
           label="Nombre de clics"
           color="#10b981"
           sparklineData={clicksSparkline}
-          historicalData={allClicksHistory}
+          historicalData={searchConsoleHistory?.map(item => ({ date: item.date, value: item.clicks }))}
+          isGAMetric={false}
         />
       </div>
 
@@ -154,7 +106,8 @@ export const MetricsGrid: React.FC<MetricsGridProps> = ({
           label="Impressions"
           color="#8b5cf6"
           sparklineData={impressionsSparkline}
-          historicalData={allImpressionsHistory}
+          historicalData={searchConsoleHistory?.map(item => ({ date: item.date, value: item.impressions }))}
+          isGAMetric={false}
         />
       </div>
 
@@ -166,6 +119,7 @@ export const MetricsGrid: React.FC<MetricsGridProps> = ({
           color="#f59e0b"
           historicalData={analyticsMetrics?.pageViewsHistory}
           sparklineData={analyticsMetrics?.pageViewsHistory?.map(item => item.value)}
+          isGAMetric={true}
         />
       </div>
 
@@ -177,6 +131,7 @@ export const MetricsGrid: React.FC<MetricsGridProps> = ({
           color="#ec4899"
           historicalData={analyticsMetrics?.activeUsersHistory}
           sparklineData={analyticsMetrics?.activeUsersHistory?.map(item => item.value)}
+          isGAMetric={true}
         />
       </div>
 
@@ -187,6 +142,7 @@ export const MetricsGrid: React.FC<MetricsGridProps> = ({
           value={analyticsMetrics?.realtimeUsers || 0}
           color="#06b6d4"
           tooltip="Nombre de visiteurs actifs sur les 30 dernières minutes"
+          isGAMetric={true}
         />
       </div>
     </div>

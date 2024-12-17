@@ -26,8 +26,8 @@ class GoogleAuthClientService {
       client_id: this.config.clientId,
       redirect_uri: this.config.redirectUri,
       response_type: 'code',
-      access_type: 'offline', // Request refresh token
-      prompt: 'consent', // Force consent screen to get refresh token
+      access_type: 'offline',
+      prompt: 'consent',
       state,
       scope: this.config.scopes.join(' ')
     });
@@ -57,11 +57,9 @@ class GoogleAuthClientService {
         throw new Error(data.error_description || 'Failed to get tokens');
       }
 
-      // Store both access token and refresh token
       storage.set(STORAGE_KEYS.ACCESS_TOKEN, data.access_token);
       storage.set(STORAGE_KEYS.REFRESH_TOKEN, data.refresh_token);
       
-      // Setup refresh timer
       this.setupRefreshTimer(data.expires_in);
     } catch (error) {
       console.error('Error exchanging code for tokens:', error);
@@ -107,7 +105,14 @@ class GoogleAuthClientService {
   }
 
   getAccessToken(): string | null {
-    return storage.get(STORAGE_KEYS.ACCESS_TOKEN);
+    const token = storage.get(STORAGE_KEYS.ACCESS_TOKEN);
+    if (!token) {
+      const refreshToken = storage.get(STORAGE_KEYS.REFRESH_TOKEN);
+      if (refreshToken) {
+        this.refreshToken();
+      }
+    }
+    return token;
   }
 }
 
