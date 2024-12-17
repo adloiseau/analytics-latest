@@ -3,6 +3,9 @@ import { X } from 'lucide-react';
 import { MetricBlock } from './MetricBlock';
 import { METRIC_DEFINITIONS } from '../../types/metrics';
 import { MetricHistoryPopup } from './MetricHistoryPopup';
+import { useFilters } from '../../contexts/FilterContext';
+import { useQuery } from 'react-query';
+import { metricsService } from '../../services/supabase/metrics';
 import type { SearchAnalyticsRow } from '../../services/googleAuth/types';
 
 interface SiteMetricsPopupProps {
@@ -17,7 +20,36 @@ export const SiteMetricsPopup: React.FC<SiteMetricsPopupProps> = ({
   onClose
 }) => {
   const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
-  const hostname = new URL(site.keys[0]).hostname;
+  const { dateRange } = useFilters();
+
+  // Fetch historical data for all metrics
+  const { data: metricsHistory } = useQuery(
+    ['metricsHistory', site.keys[0], dateRange],
+    async () => {
+      const metrics = ['AS', 'BL', 'RD', 'KD', 'VI', 'TF', 'CF'];
+      const results = await Promise.all(
+        metrics.map(async (metric) => {
+          const history = await metricsService.getMetricsHistory(site.keys[0], metric, 90);
+          return {
+            metric,
+            history: history.map(item => ({
+              date: item.date,
+              value: item.value
+            }))
+          };
+        })
+      );
+      
+      return results.reduce((acc, { metric, history }) => {
+        acc[metric] = history;
+        return acc;
+      }, {} as Record<string, Array<{ date: string; value: number }>>);
+    },
+    {
+      enabled: !!site.keys[0],
+      staleTime: 5 * 60 * 1000
+    }
+  );
 
   // Filter out metrics that are already shown in the main view
   const additionalMetrics = Object.entries(METRIC_DEFINITIONS).filter(
@@ -38,30 +70,36 @@ export const SiteMetricsPopup: React.FC<SiteMetricsPopupProps> = ({
           <h2 className="text-lg font-semibold text-white mb-1">
             Métriques additionnelles
           </h2>
-          <p className="text-sm text-gray-400 mb-6">{hostname}</p>
+          <p className="text-sm text-gray-400 mb-6">{new URL(site.keys[0]).hostname}</p>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {additionalMetrics.map(([key, definition]) => (
-              <div 
-                key={key} 
-                className="w-full cursor-pointer hover:scale-[1.02] transition-transform"
-                onClick={() => setSelectedMetric(key)}
-              >
-                <MetricBlock
-                  type="custom"
-                  label={definition.label}
-                  value={siteMetrics?.[key]?.value || 0}
-                  trend={siteMetrics?.[key]?.trend || 0}
-                  color={definition.color}
-                  tooltip={definition.description}
-                />
-              </div>
-            ))}
+            {additionalMetrics.map(([key, definition]) => {
+              const metricHistory = metricsHistory?.[key];
+              const sparklineData = metricHistory?.map(item => item.value);
+
+              return (
+                <div 
+                  key={key} 
+                  className="w-full cursor-pointer hover:scale-[1.02] transition-transform"
+                  onClick={() => setSelectedMetric(key)}
+                >
+                  <MetricBlock
+                    type="custom"
+                    label={definition.label}
+                    value={siteMetrics?.[key]?.value || 0}
+                    color={definition.color}
+                    tooltip={definition.description}
+                    sparklineData={sparklineData}
+                    historicalData={metricHistory}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {selectedMetric && (
+      {selectedMetric && METRIC_DEFINITIONS[selectedMetric] && (
         <MetricHistoryPopup
           siteUrl={site.keys[0]}
           metricKey={selectedMetric}

@@ -29,9 +29,9 @@ export const Dashboard = () => {
 
   return (
     <Layout>
-      <div className="space-y-0.5">
+      <div className="space-y-4"> {/* Changed from space-y-0.5 to space-y-4 */}
         {isLoading ? (
-          <div className="space-y-0.5">
+          <div className="space-y-4"> {/* Changed from space-y-0.5 to space-y-4 */}
             {[...Array(3)].map((_, i) => (
               <div key={i} className="animate-pulse">
                 <div className="h-[160px] bg-[#25262b] rounded-lg" />
@@ -43,7 +43,7 @@ export const Dashboard = () => {
             <p className="text-red-400">{error.message}</p>
           </div>
         ) : (
-          <div className="space-y-0.5">
+          <div className="space-y-4"> {/* Changed from space-y-0.5 to space-y-4 */}
             {sortedSites.map((site, index) => {
               const previousSite = previousData?.rows?.find(
                 prev => prev.keys[0] === site.keys[0]

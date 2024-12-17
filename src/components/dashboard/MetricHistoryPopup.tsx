@@ -1,7 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { format, parseISO, subDays } from 'date-fns';
+import { format, parseISO, subDays, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useQuery } from 'react-query';
 import { useAuth } from '../../contexts/AuthContext';
@@ -37,20 +37,38 @@ export const MetricHistoryPopup: React.FC<MetricHistoryPopupProps> = ({
   const previousStartDate = format(subDays(currentStartDate, daysDiff), 'yyyy-MM-dd');
   const previousEndDate = format(subDays(currentEndDate, daysDiff), 'yyyy-MM-dd');
 
+  // Adjust end date for Search Console data to account for data processing delay
+  const searchConsoleEndDate = format(subDays(currentEndDate, 3), 'yyyy-MM-dd');
+  const previousSearchConsoleEndDate = format(subDays(parseISO(previousEndDate), 3), 'yyyy-MM-dd');
+
   const { data: currentPeriod, isLoading: isCurrentLoading } = useQuery(
     ['metricHistory', siteUrl, metricKey, startDate, endDate],
     async () => {
       if (metricKey === 'clicks' || metricKey === 'impressions') {
         const response = await searchConsoleApi.fetchSearchAnalytics(accessToken!, siteUrl, {
           startDate,
-          endDate,
+          endDate: searchConsoleEndDate,
           dimensions: ['date'],
           rowLimit: 1000
         });
-        return response.rows?.map(row => ({
-          date: row.keys[0],
-          value: row[metricKey]
-        })) || [];
+        
+        const dates = [];
+        let currentDate = new Date(startDate);
+        const endDateObj = new Date(endDate);
+        while (currentDate <= endDateObj) {
+          dates.push(format(currentDate, 'yyyy-MM-dd'));
+          currentDate = addDays(currentDate, 1);
+        }
+
+        return dates.map(date => {
+          const row = response.rows?.find(r => r.keys[0] === date);
+          const dateObj = parseISO(date);
+          const searchConsoleEndDateObj = parseISO(searchConsoleEndDate);
+          return {
+            date,
+            value: dateObj <= searchConsoleEndDateObj ? (row ? row[metricKey] : 0) : null
+          };
+        });
       }
       
       const days = dateRange === '24h' ? 2 : 
@@ -74,14 +92,28 @@ export const MetricHistoryPopup: React.FC<MetricHistoryPopupProps> = ({
       if (metricKey === 'clicks' || metricKey === 'impressions') {
         const response = await searchConsoleApi.fetchSearchAnalytics(accessToken!, siteUrl, {
           startDate: previousStartDate,
-          endDate: previousEndDate,
+          endDate: previousSearchConsoleEndDate,
           dimensions: ['date'],
           rowLimit: 1000
         });
-        return response.rows?.map(row => ({
-          date: format(subDays(parseISO(row.keys[0]), -daysDiff), 'yyyy-MM-dd'),
-          previousValue: row[metricKey]
-        })) || [];
+
+        const dates = [];
+        let currentDate = new Date(previousStartDate);
+        const endDateObj = new Date(previousEndDate);
+        while (currentDate <= endDateObj) {
+          dates.push(format(currentDate, 'yyyy-MM-dd'));
+          currentDate = addDays(currentDate, 1);
+        }
+
+        return dates.map(date => {
+          const row = response.rows?.find(r => r.keys[0] === date);
+          const dateObj = parseISO(date);
+          const searchConsoleEndDateObj = parseISO(previousSearchConsoleEndDate);
+          return {
+            date: format(addDays(parseISO(date), daysDiff), 'yyyy-MM-dd'),
+            previousValue: dateObj <= searchConsoleEndDateObj ? (row ? row[metricKey] : 0) : null
+          };
+        });
       }
       return [];
     },
@@ -102,13 +134,13 @@ export const MetricHistoryPopup: React.FC<MetricHistoryPopupProps> = ({
         const index = mergedData.findIndex(curr => curr.date === prev.date);
         if (index !== -1) {
           mergedData[index] = { ...mergedData[index], previousValue: prev.previousValue };
-        } else {
-          mergedData.push(prev);
         }
       });
     }
 
-    return mergedData.sort((a, b) => a.date.localeCompare(b.date));
+    return mergedData
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .filter(item => item.value !== null || item.previousValue !== null);
   }, [currentPeriod, previousPeriod]);
 
   return (
@@ -156,20 +188,13 @@ export const MetricHistoryPopup: React.FC<MetricHistoryPopupProps> = ({
                     if (active && payload && payload.length) {
                       return (
                         <div className="bg-[#1a1b1e]/95 backdrop-blur-sm p-3 rounded-lg shadow-xl border border-gray-800/50">
-                          <p className="text-gray-400 text-xs mb-2">
+                          <p className="text-gray-400 text-xs mb-1">
                             {format(parseISO(label), 'dd MMMM yyyy', { locale: fr })}
                           </p>
                           {payload.map((entry: any, index: number) => (
-                            <div key={index} className="flex items-center gap-2 text-sm">
-                              <div 
-                                className="w-2 h-2 rounded-full"
-                                style={{ backgroundColor: entry.color }}
-                              />
-                              <span className="text-gray-300">{entry.name}:</span>
-                              <span className="text-white font-medium">
-                                {formatMetric(entry.value)}
-                              </span>
-                            </div>
+                            <p key={index} className="text-white text-sm">
+                              {entry.name}: {formatMetric(entry.value)}
+                            </p>
                           ))}
                         </div>
                       );
@@ -177,21 +202,14 @@ export const MetricHistoryPopup: React.FC<MetricHistoryPopupProps> = ({
                     return null;
                   }}
                 />
-                <Legend 
-                  verticalAlign="top"
-                  height={36}
-                  formatter={(value) => (
-                    <span className="text-gray-300">{value}</span>
-                  )}
-                />
+                <Legend />
                 <Line
                   name="Période actuelle"
                   type="monotone"
                   dataKey="value"
                   stroke={metricDefinition.color}
-                  strokeWidth={2.5}
+                  strokeWidth={2}
                   dot={{ r: 4, strokeWidth: 2 }}
-                  activeDot={{ r: 6, strokeWidth: 2 }}
                 />
                 {previousPeriod && previousPeriod.length > 0 && (
                   <Line
@@ -201,9 +219,7 @@ export const MetricHistoryPopup: React.FC<MetricHistoryPopupProps> = ({
                     stroke="#4B5563"
                     strokeWidth={2}
                     strokeDasharray="5 5"
-                    dot={{ r: 3, strokeWidth: 2, fill: '#4B5563' }}
-                    activeDot={{ r: 5, strokeWidth: 2 }}
-                    opacity={0.7}
+                    dot={{ r: 4, strokeWidth: 2 }}
                   />
                 )}
               </LineChart>

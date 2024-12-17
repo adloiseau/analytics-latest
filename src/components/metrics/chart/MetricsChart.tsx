@@ -1,12 +1,14 @@
 import React, { useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { formatMetric } from '../../../utils/metrics';
+import { isPendingData } from '../../../utils/metrics/searchConsole';
 import { CustomTooltip } from './CustomTooltip';
 import { ChartContainer } from './ChartContainer';
 import { EmptyChart } from './EmptyChart';
 import { ChartLegend } from './ChartLegend';
+import { PendingDataLine } from './PendingDataLine';
 import { useWindowSize } from '../../../hooks/useWindowSize';
 import { useSelectedItem } from '../../../contexts/SelectedItemContext';
 
@@ -48,10 +50,19 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ data, title, dimensi
       });
     }
 
-    return filteredData.map(item => ({
-      ...item,
-      displayDate: formatDate(item.date)
-    }));
+    return filteredData.map(item => {
+      const pending = isPendingData(item.date);
+      return {
+        ...item,
+        displayDate: formatDate(item.date),
+        // Données confirmées
+        confirmedClicks: pending ? null : item.clicks,
+        confirmedImpressions: pending ? null : item.impressions,
+        // Données en attente
+        pendingClicks: pending ? item.clicks : null,
+        pendingImpressions: pending ? item.impressions : null,
+      };
+    });
   }, [data, selectedItem, dimension]);
 
   if (!data?.length) {
@@ -84,28 +95,12 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ data, title, dimensi
               bottom: 5 
             }}
           >
-            <defs>
-              <linearGradient id="clicksGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-              </linearGradient>
-              <linearGradient id="impressionsGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid 
-              strokeDasharray="3 3" 
-              stroke="#333" 
-              vertical={!isMobile}
-            />
+            <CartesianGrid strokeDasharray="3 3" stroke="#333" />
             <XAxis 
               dataKey="displayDate"
               stroke="#666"
               tick={{ fill: '#666', fontSize: isMobile ? 10 : 12 }}
               tickMargin={10}
-              interval={isMobile ? 'preserveStartEnd' : 0}
-              axisLine={{ stroke: '#333' }}
             />
             <YAxis 
               yAxisId="left"
@@ -113,7 +108,6 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ data, title, dimensi
               tick={{ fill: '#3b82f6', fontSize: isMobile ? 10 : 12 }}
               width={isMobile ? 40 : 60}
               tickFormatter={formatMetric}
-              axisLine={{ stroke: '#333' }}
               label={!isMobile ? { 
                 value: 'Clics', 
                 angle: -90, 
@@ -129,7 +123,6 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ data, title, dimensi
               tick={{ fill: '#10b981', fontSize: isMobile ? 10 : 12 }}
               width={isMobile ? 40 : 60}
               tickFormatter={formatMetric}
-              axisLine={{ stroke: '#333' }}
               label={!isMobile ? { 
                 value: 'Impressions', 
                 angle: 90, 
@@ -138,31 +131,20 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ data, title, dimensi
                 style: { fontSize: 12 }
               } : undefined}
             />
-            <Tooltip 
-              content={<CustomTooltip />}
-              wrapperStyle={{ zIndex: 1000 }}
-            />
-            <Line 
+            <Tooltip content={<CustomTooltip />} />
+            <Legend />
+            
+            <PendingDataLine
+              dataKey="Clicks"
               yAxisId="left"
               name="Clics"
-              type="monotone" 
-              dataKey="clicks" 
-              stroke="#3b82f6" 
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: isMobile ? 4 : 5, strokeWidth: 2 }}
-              fill="url(#clicksGradient)"
+              color="#3b82f6"
             />
-            <Line 
+            <PendingDataLine
+              dataKey="Impressions"
               yAxisId="right"
               name="Impressions"
-              type="monotone" 
-              dataKey="impressions" 
-              stroke="#10b981" 
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: isMobile ? 4 : 5, strokeWidth: 2 }}
-              fill="url(#impressionsGradient)"
+              color="#10b981"
             />
           </LineChart>
         </ResponsiveContainer>
