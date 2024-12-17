@@ -7,7 +7,6 @@ import type { RealTimeMetrics } from '../types/analytics';
 
 export function useGoogleAnalytics(websiteUrl: string) {
   const [metrics, setMetrics] = useState<RealTimeMetrics | null>(null);
-  const [realtimeMetrics, setRealtimeMetrics] = useState<RealTimeMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { accessToken } = useAuth();
@@ -31,11 +30,16 @@ export function useGoogleAnalytics(websiteUrl: string) {
           analyticsApi.getRealTimeData(propertyId, accessToken)
         ]);
         
-        setMetrics(metricsData);
-        setRealtimeMetrics(realtimeData);
+        // Ajouter l'historique des métriques
+        const enrichedMetrics = {
+          ...metricsData,
+          pageViewsHistory: metricsData.pageViewsHistory || [],
+          activeUsersHistory: metricsData.activeUsersHistory || []
+        };
+        
+        setMetrics(enrichedMetrics);
         setError(null);
       } catch (err) {
-        console.error('Error fetching Google Analytics data:', err);
         setError('Erreur lors de la récupération des données Google Analytics');
       } finally {
         setLoading(false);
@@ -44,7 +48,6 @@ export function useGoogleAnalytics(websiteUrl: string) {
 
     fetchData();
     
-    // Refresh intervals for different types of data
     const metricsInterval = setInterval(fetchData, REFRESH_CONFIG.GA_REFRESH_INTERVAL);
     const realtimeInterval = setInterval(fetchData, REFRESH_CONFIG.GA_REALTIME_REFRESH_INTERVAL);
 
@@ -54,5 +57,5 @@ export function useGoogleAnalytics(websiteUrl: string) {
     };
   }, [websiteUrl, accessToken]);
 
-  return { metrics, realtimeMetrics, loading, error };
+  return { metrics, loading, error };
 }

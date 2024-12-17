@@ -1,52 +1,63 @@
-import { subDays, parseISO, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
+import { parseISO, startOfDay, endOfDay, subDays } from 'date-fns';
 import { DateRange } from '../../types/filters';
 import { getDateRange } from '../dates';
-
-export interface MetricDataPoint {
-  date: string;
-  value: number;
-}
+import { MetricDataPoint } from './types';
 
 export const calculateTrendForRange = (
   data: MetricDataPoint[],
   dateRange: DateRange
-): number => {
-  if (!data || data.length < 2) return 0;
+): number | null => {
+  if (!data || data.length < 2) {
+    console.log('Insufficient data for trend calculation');
+    return null;
+  }
 
   // Sort data by date
   const sortedData = [...data].sort((a, b) => a.date.localeCompare(b.date));
+  console.log('Raw data:', sortedData);
 
+  // Get date range boundaries
   const { startDate, endDate } = getDateRange(dateRange);
-  const start = startOfDay(parseISO(startDate));
-  const end = endOfDay(parseISO(endDate));
+  const currentStart = startOfDay(parseISO(startDate));
+  const currentEnd = endOfDay(parseISO(endDate));
+  
+  // Calculate previous period boundaries
+  const daysDiff = Math.ceil((currentEnd.getTime() - currentStart.getTime()) / (1000 * 60 * 60 * 24));
+  const previousStart = startOfDay(subDays(currentStart, daysDiff));
+  const previousEnd = endOfDay(subDays(currentEnd, daysDiff));
 
-  // Filter data for current period
+  console.log('Current period:', currentStart.toISOString(), 'to', currentEnd.toISOString());
+  console.log('Previous period:', previousStart.toISOString(), 'to', previousEnd.toISOString());
+
+  // Filter data for current and previous periods
   const currentPeriodData = sortedData.filter(item => {
     const date = parseISO(item.date);
-    return !isBefore(date, start) && !isAfter(date, end);
+    return date >= currentStart && date <= currentEnd;
   });
 
-  // Calculate previous period dates
-  const periodLength = end.getTime() - start.getTime();
-  const previousStart = new Date(start.getTime() - periodLength);
-  const previousEnd = new Date(start.getTime() - 1); // One millisecond before current period
-
-  // Filter data for previous period
   const previousPeriodData = sortedData.filter(item => {
     const date = parseISO(item.date);
-    return !isBefore(date, previousStart) && !isAfter(date, previousEnd);
+    return date >= previousStart && date < currentStart;
   });
 
-  // Get the latest values from each period
-  const currentValue = currentPeriodData.length > 0 
-    ? currentPeriodData[currentPeriodData.length - 1].value
-    : 0;
-  
-  const previousValue = previousPeriodData.length > 0
-    ? previousPeriodData[previousPeriodData.length - 1].value
-    : 0;
+  console.log('Current period data:', currentPeriodData);
+  console.log('Previous period data:', previousPeriodData);
+
+  // Calculate sums for both periods
+  const currentSum = currentPeriodData.reduce((sum, item) => sum + item.value, 0);
+  const previousSum = previousPeriodData.reduce((sum, item) => sum + item.value, 0);
+
+  console.log('Current sum:', currentSum);
+  console.log('Previous sum:', previousSum);
+
+  // Return null if we don't have data for both periods
+  if (currentPeriodData.length === 0 || previousPeriodData.length === 0) {
+    console.log('Missing data for one or both periods');
+    return null;
+  }
 
   // Calculate trend percentage
-  if (previousValue === 0) return currentValue > 0 ? 100 : 0;
-  return ((currentValue - previousValue) / previousValue) * 100;
+  const trend = ((currentSum - previousSum) / previousSum) * 100;
+  console.log('Calculated trend:', trend);
+  return trend;
 };

@@ -2,7 +2,7 @@ import React from 'react';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { Tooltip } from '../common/Tooltip';
 import { formatMetric } from '../../utils/metrics';
-import { SparklineChart } from '../metrics/SparklineChart';
+import { MetricSparkline } from '../metrics/MetricSparkline';
 import { calculateTrendForRange } from '../../utils/metrics/trends';
 import { useFilters } from '../../contexts/FilterContext';
 
@@ -26,23 +26,27 @@ export const MetricBlock: React.FC<MetricBlockProps> = ({
 }) => {
   const { dateRange } = useFilters();
   
-  // Calculate trend only if we have historical data
-  const trend = historicalData && historicalData.length > 1 
-    ? calculateTrendForRange(historicalData, dateRange)
-    : null;
+  console.log(`MetricBlock ${label}:`, { historicalData, sparklineData });
+
+  // Calculate trend only if we have sufficient historical data
+  const trend = React.useMemo(() => {
+    if (!historicalData || historicalData.length < 2) {
+      console.log(`No historical data for trend calculation: ${label}`);
+      return null;
+    }
+    const calculatedTrend = calculateTrendForRange(historicalData, dateRange);
+    console.log(`Final trend for ${label} :`, calculatedTrend);
+    return calculatedTrend;
+  }, [historicalData, dateRange, label]);
 
   const content = (
     <div className="w-full h-[70px] relative overflow-hidden">
       <div className="absolute inset-0 bg-[#1a1b1e]/50 rounded-lg border border-gray-800/10">
-        <div className="absolute inset-0 opacity-20 group-hover:opacity-30 transition-opacity">
-          {sparklineData && sparklineData.length > 0 && (
-            <SparklineChart 
-              data={sparklineData} 
-              color={color}
-              height={70}
-            />
-          )}
-        </div>
+        {sparklineData && sparklineData.length > 0 && (
+          <div className="absolute inset-0 opacity-20 group-hover:opacity-30 transition-opacity">
+            <MetricSparkline data={sparklineData} color={color} />
+          </div>
+        )}
       </div>
 
       <div className="relative z-10 flex flex-col h-full p-2">

@@ -23,3 +23,17 @@ export const isPendingData = (date: string | Date): boolean => {
 export const getSearchConsoleEndDate = (currentEndDate: Date): string => {
   return format(subDays(currentEndDate, SEARCH_CONSOLE_DATA_DELAY), 'yyyy-MM-dd');
 };
+
+// Ajuste les données pour prendre en compte le délai de collecte
+export const adjustDataForDelay = (data: any[]): any[] => {
+  return data.map(item => {
+    const isPending = isPendingData(item.date);
+    return {
+      ...item,
+      clicks: isPending ? null : item.clicks,
+      impressions: isPending ? null : item.impressions,
+      pendingClicks: isPending ? item.clicks : null,
+      pendingImpressions: isPending ? item.impressions : null,
+    };
+  });
+};
