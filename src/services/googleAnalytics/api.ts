@@ -1,10 +1,10 @@
 import { RealTimeMetrics } from '../../types/analytics';
+import { getTrafficSourceData } from './api/getTrafficSourceData';
 
 export const analyticsApi = {
+  getTrafficSourceData,
   async getMetricsData(propertyId: string, accessToken: string, dateRange: { startDate: string, endDate: string }): Promise<RealTimeMetrics> {
     try {
-      console.log('Fetching metrics data with date range:', dateRange);
-
       // Validate date range
       if (!dateRange.startDate || !dateRange.endDate) {
         throw new Error('Invalid date range provided');
