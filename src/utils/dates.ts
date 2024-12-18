@@ -4,12 +4,13 @@ import type { DateRange } from '../types/filters';
 export const getDateRange = (range: DateRange) => {
   const now = new Date();
   let startDate: Date;
-  let endDate: Date = now;
+  let endDate = now;
 
   switch (range) {
     case '24h':
-      // For 24h, use the last 24 hours from now
+      // Pour 24h, utiliser l'heure exacte au lieu de startOfDay/endOfDay
       startDate = subHours(now, 24);
+      endDate = now;
       break;
       
     case '7d':
@@ -32,8 +33,11 @@ export const getDateRange = (range: DateRange) => {
       endDate = endOfDay(now);
   }
 
+  // Format avec l'heure pour 24h, sinon juste la date
+  const formatStr = range === '24h' ? "yyyy-MM-dd'T'HH:mm:ss'Z'" : 'yyyy-MM-dd';
+  
   return {
-    startDate: format(startDate, 'yyyy-MM-dd'),
-    endDate: format(endDate, 'yyyy-MM-dd')
+    startDate: format(startDate, formatStr),
+    endDate: format(endDate, formatStr)
   };
 };

@@ -11,6 +11,14 @@ export const TrafficSourcesChart: React.FC = () => {
   const { data, isLoading, error } = useTrafficSources();
   const { selectedSource } = useTrafficSource();
 
+  console.log('[TrafficSourcesChart] Render:', {
+    hasData: !!data,
+    timelineDataLength: data?.timelineData?.length,
+    selectedSource,
+    isLoading,
+    error
+  });
+
   if (isLoading) {
     return (
       <ChartContainer title="Évolution du Trafic par Source">
@@ -20,6 +28,7 @@ export const TrafficSourcesChart: React.FC = () => {
   }
 
   if (error) {
+    console.error('[TrafficSourcesChart] Error:', error);
     return (
       <ChartContainer title="Évolution du Trafic par Source">
         <div className="h-[400px] w-full flex items-center justify-center text-red-400">
@@ -30,6 +39,7 @@ export const TrafficSourcesChart: React.FC = () => {
   }
 
   if (!data?.timelineData?.length) {
+    console.warn('[TrafficSourcesChart] No timeline data available');
     return (
       <ChartContainer title="Évolution du Trafic par Source">
         <div className="h-[400px] w-full flex items-center justify-center text-gray-400">
@@ -39,26 +49,41 @@ export const TrafficSourcesChart: React.FC = () => {
     );
   }
 
-  const formatDate = (date: string) => {
-    try {
-      return format(parseISO(date), 'd MMM', { locale: fr });
-    } catch {
-      return date;
-    }
-  };
-
   // Ensure data is properly sorted by date
   const sortedData = [...data.timelineData].sort((a, b) => a.date.localeCompare(b.date));
+
+  console.log('[TrafficSourcesChart] Sorted timeline data:', {
+    dataPoints: sortedData.length,
+    firstDate: sortedData[0]?.date,
+    lastDate: sortedData[sortedData.length - 1]?.date,
+    sampleData: sortedData[0]
+  });
 
   // Filter sources to display based on selection
   const sourcesToDisplay = selectedSource 
     ? [TRAFFIC_SOURCES.find(source => source.name === selectedSource)].filter(Boolean)
     : TRAFFIC_SOURCES;
 
+  console.log('[TrafficSourcesChart] Sources to display:', {
+    count: sourcesToDisplay.length,
+    sources: sourcesToDisplay.map(s => s.name)
+  });
+
   // Verify data has values for selected sources
   const hasData = sortedData.some(day => 
-    sourcesToDisplay.some(source => day[source.name] !== undefined)
+    sourcesToDisplay.some(source => {
+      const value = day[source.name];
+      return value !== undefined && value !== null;
+    })
   );
+
+  console.log('[TrafficSourcesChart] Data validation:', {
+    hasData,
+    sampleValues: sourcesToDisplay.map(source => ({
+      source: source.name,
+      firstDayValue: sortedData[0]?.[source.name]
+    }))
+  });
 
   if (!hasData) {
     return (
@@ -83,7 +108,7 @@ export const TrafficSourcesChart: React.FC = () => {
               dataKey="date"
               stroke="#666"
               tick={{ fill: '#666' }}
-              tickFormatter={formatDate}
+              tickFormatter={(date) => format(parseISO(date), 'd MMM', { locale: fr })}
               angle={-45}
               textAnchor="end"
               height={60}
@@ -116,19 +141,26 @@ export const TrafficSourcesChart: React.FC = () => {
                 return null;
               }}
             />
-            {sourcesToDisplay.map((source) => (
-              <Line
-                key={source.name}
-                name={source.name}
-                type="monotone"
-                dataKey={source.name}
-                stroke={source.color}
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4 }}
-                connectNulls
-              />
-            ))}
+            {sourcesToDisplay.map((source) => {
+              console.log(`[TrafficSourcesChart] Adding line for source ${source.name}:`, {
+                color: source.color,
+                hasSomeData: sortedData.some(d => d[source.name] > 0)
+              });
+              
+              return (
+                <Line
+                  key={source.name}
+                  name={source.name}
+                  type="monotone"
+                  dataKey={source.name}
+                  stroke={source.color}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                  connectNulls
+                />
+              );
+            })}
           </LineChart>
         </ResponsiveContainer>
       </div>

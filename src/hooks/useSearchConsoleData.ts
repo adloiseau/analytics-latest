@@ -13,7 +13,8 @@ type Dimension = 'page' | 'query' | 'site';
 export function useSearchConsoleData(
   dimension: Dimension,
   customStartDate?: string,
-  customEndDate?: string
+  customEndDate?: string,
+  filterValue?: string
 ) {
   const { accessToken, isAuthenticated } = useAuth();
   const { selectedSite } = useSite();
@@ -23,8 +24,17 @@ export function useSearchConsoleData(
     ? { startDate: customStartDate, endDate: customEndDate }
     : getDateRange(dateRange);
 
+  console.log('[useSearchConsoleData] Query params:', {
+    dimension,
+    dateRange,
+    startDate,
+    endDate,
+    selectedSite,
+    filterValue
+  });
+
   return useQuery(
-    ['searchConsole', dimension, selectedSite, startDate, endDate, searchQuery],
+    ['searchConsole', dimension, selectedSite, startDate, endDate, searchQuery, filterValue],
     async () => {
       if (!accessToken || !isAuthenticated) {
         throw new Error('Authentication required');
@@ -43,17 +53,16 @@ export function useSearchConsoleData(
                 endDate,
                 dimensions: [],
                 rowLimit: 1,
+                dimensionFilterGroups: []
               });
 
-              const data = response.rows?.[0] || {
-                clicks: 0,
-                impressions: 0,
-                ctr: 0,
-                position: 0
-              };
-
               return {
-                ...data,
+                ...response.rows?.[0] || {
+                  clicks: 0,
+                  impressions: 0,
+                  ctr: 0,
+                  position: 0
+                },
                 keys: [site.siteUrl]
               };
             } catch (error) {
@@ -80,20 +89,45 @@ export function useSearchConsoleData(
         throw new Error('No site selected');
       }
 
+      const dimensionFilterGroups = filterValue ? [{
+        filters: [{
+          dimension,
+          operator: 'equals',
+          expression: filterValue
+        }]
+      }] : [];
+
+      console.log('[useSearchConsoleData] Fetching data for site:', {
+        site: selectedSite,
+        startDate,
+        endDate,
+        filterValue,
+        dimensionFilterGroups
+      });
+
       const [dimensionResponse, timeResponse] = await Promise.all([
         searchConsoleApi.fetchSearchAnalytics(accessToken, selectedSite, {
           startDate,
           endDate,
           dimensions: [dimension],
           rowLimit: 1000,
+          dimensionFilterGroups
         }),
         searchConsoleApi.fetchSearchAnalytics(accessToken, selectedSite, {
           startDate,
           endDate,
           dimensions: ['date'],
           rowLimit: 1000,
+          dimensionFilterGroups
         })
       ]);
+
+      console.log('[useSearchConsoleData] API responses:', {
+        dimensionRows: dimensionResponse.rows?.length,
+        timeRows: timeResponse.rows?.length,
+        sampleDimensionRow: dimensionResponse.rows?.[0],
+        sampleTimeRow: timeResponse.rows?.[0]
+      });
 
       const rows = dimensionResponse.rows || [];
       const timeRows = timeResponse.rows || [];
@@ -101,6 +135,13 @@ export function useSearchConsoleData(
       const filteredRows = filterData(rows, searchQuery);
       const deduplicatedRows = deduplicateTableData(filteredRows);
       const chartData = prepareChartData(timeRows);
+
+      console.log('[useSearchConsoleData] Processed data:', {
+        originalRows: rows.length,
+        filteredRows: filteredRows.length,
+        deduplicatedRows: deduplicatedRows.length,
+        chartDataPoints: chartData.length
+      });
 
       return { 
         rows: deduplicatedRows,
@@ -110,9 +151,11 @@ export function useSearchConsoleData(
     {
       enabled: !!accessToken && !!isAuthenticated && (dimension === 'site' || !!selectedSite),
       staleTime: REFRESH_CONFIG.GSC_REFRESH_INTERVAL,
-      refetchInterval: REFRESH_CONFIG.GSC_REFRESH_INTERVAL,
       keepPreviousData: true,
       retry: 2,
+      onError: (error) => {
+        console.error('[useSearchConsoleData] Error:', error);
+      }
     }
   );
 }

@@ -30,6 +30,10 @@ export const searchConsoleApi = {
     params: SearchAnalyticsRequest
   ): Promise<SearchAnalyticsResponse> {
     try {
+      // Toujours utiliser le format YYYY-MM-DD pour l'API Search Console
+      const startDate = params.startDate.split('T')[0];
+      const endDate = params.endDate.split('T')[0];
+
       const response = await fetch(
         `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
         {
@@ -40,7 +44,9 @@ export const searchConsoleApi = {
           },
           body: JSON.stringify({
             ...params,
-            dimensionFilterGroups: [],
+            startDate,
+            endDate,
+            dimensionFilterGroups: params.dimensionFilterGroups || [],
             searchType: 'web'
           }),
         }

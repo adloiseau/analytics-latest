@@ -2,12 +2,12 @@ import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { formatMetric } from '../../../utils/metrics';
-import { CustomTooltip } from './CustomTooltip';
-import { ChartContainer } from './ChartContainer';
-import { EmptyChart } from './EmptyChart';
-import { ChartLegend } from './ChartLegend';
-import { useWindowSize } from '../../../hooks/useWindowSize';
+import { formatMetric } from '../../utils/metrics';
+import { CustomTooltip } from './chart/CustomTooltip';
+import { ChartContainer } from './chart/ChartContainer';
+import { EmptyChart } from './chart/EmptyChart';
+import { ChartLegend } from './chart/ChartLegend';
+import { useWindowSize } from '../../hooks/useWindowSize';
 
 interface ChartDataPoint {
   date: string;
@@ -18,14 +18,14 @@ interface ChartDataPoint {
   keys?: string[];
 }
 
-interface MetricsChartProps {
+interface SearchAnalyticsChartProps {
   data: ChartDataPoint[];
   title: string;
   dimension?: 'page' | 'query';
   showPreviousPeriod?: boolean;
 }
 
-export const MetricsChart: React.FC<MetricsChartProps> = ({ 
+export const SearchAnalyticsChart: React.FC<SearchAnalyticsChartProps> = ({ 
   data, 
   title, 
   dimension,
@@ -45,12 +45,20 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
   const latestData = data[data.length - 1];
   const chartHeight = isMobile ? 280 : 400;
 
+  // Définition des couleurs pour une meilleure différenciation
+  const colors = {
+    currentClicks: '#3b82f6', // Bleu vif
+    currentImpressions: '#10b981', // Vert vif
+    previousClicks: '#93c5fd', // Bleu plus clair
+    previousImpressions: '#6ee7b7' // Vert plus clair
+  };
+
   return (
     <ChartContainer title={title}>
       <ChartLegend 
         items={[
-          { color: '#3b82f6', label: 'Clics', value: formatMetric(latestData.clicks) },
-          { color: '#10b981', label: 'Impressions', value: formatMetric(latestData.impressions) }
+          { color: colors.currentClicks, label: 'Clics', value: formatMetric(latestData.clicks) },
+          { color: colors.currentImpressions, label: 'Impressions', value: formatMetric(latestData.impressions) }
         ]} 
       />
       <div className="h-full w-full touch-manipulation" style={{ height: chartHeight }}>
@@ -74,30 +82,30 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
             />
             <YAxis 
               yAxisId="left"
-              stroke="#3b82f6"
-              tick={{ fill: '#3b82f6', fontSize: isMobile ? 10 : 12 }}
+              stroke={colors.currentClicks}
+              tick={{ fill: colors.currentClicks, fontSize: isMobile ? 10 : 12 }}
               width={isMobile ? 40 : 60}
               tickFormatter={formatMetric}
               label={!isMobile ? { 
                 value: 'Clics', 
                 angle: -90, 
                 position: 'insideLeft', 
-                fill: '#3b82f6',
+                fill: colors.currentClicks,
                 style: { fontSize: 12 }
               } : undefined}
             />
             <YAxis 
               yAxisId="right"
               orientation="right"
-              stroke="#10b981"
-              tick={{ fill: '#10b981', fontSize: isMobile ? 10 : 12 }}
+              stroke={colors.currentImpressions}
+              tick={{ fill: colors.currentImpressions, fontSize: isMobile ? 10 : 12 }}
               width={isMobile ? 40 : 60}
               tickFormatter={formatMetric}
               label={!isMobile ? { 
                 value: 'Impressions', 
                 angle: 90, 
                 position: 'insideRight', 
-                fill: '#10b981',
+                fill: colors.currentImpressions,
                 style: { fontSize: 12 }
               } : undefined}
             />
@@ -110,7 +118,7 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
               name="Clics (période actuelle)"
               type="monotone"
               dataKey="clicks"
-              stroke="#3b82f6"
+              stroke={colors.currentClicks}
               strokeWidth={2}
               dot={false}
               activeDot={{ r: 4 }}
@@ -120,7 +128,7 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
               name="Impressions (période actuelle)"
               type="monotone"
               dataKey="impressions"
-              stroke="#10b981"
+              stroke={colors.currentImpressions}
               strokeWidth={2}
               dot={false}
               activeDot={{ r: 4 }}
@@ -134,7 +142,7 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
                   name="Clics (période précédente)"
                   type="monotone"
                   dataKey="previousClicks"
-                  stroke="#3b82f6"
+                  stroke={colors.previousClicks}
                   strokeWidth={2}
                   strokeDasharray="5 5"
                   dot={false}
@@ -145,7 +153,7 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
                   name="Impressions (période précédente)"
                   type="monotone"
                   dataKey="previousImpressions"
-                  stroke="#10b981"
+                  stroke={colors.previousImpressions}
                   strokeWidth={2}
                   strokeDasharray="5 5"
                   dot={false}

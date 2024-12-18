@@ -1,11 +1,26 @@
 import React from 'react';
 import { useSearchConsoleData } from '../../hooks/useSearchConsoleData';
-import { MetricsChart } from '../metrics/chart/MetricsChart';
+import { useFilters } from '../../contexts/FilterContext';
+import { format, parseISO, subDays } from 'date-fns';
+import { getDateRange } from '../../utils/dates';
+import { SearchAnalyticsChart } from '../metrics/SearchAnalyticsChart';
 import { useSelectedItem } from '../../contexts/SelectedItemContext';
 
 export const KeywordsChart = () => {
-  const { data, isLoading } = useSearchConsoleData('query');
+  const { dateRange } = useFilters();
   const { selectedItem } = useSelectedItem();
+  const { startDate, endDate } = getDateRange(dateRange);
+
+  // Calculate previous period dates
+  const currentStartDate = parseISO(startDate);
+  const currentEndDate = parseISO(endDate);
+  const daysDiff = Math.ceil((currentEndDate.getTime() - currentStartDate.getTime()) / (1000 * 60 * 60 * 24));
+  const previousStartDate = format(subDays(currentStartDate, daysDiff), 'yyyy-MM-dd');
+  const previousEndDate = format(subDays(currentEndDate, daysDiff), 'yyyy-MM-dd');
+
+  // Fetch data for current and previous periods
+  const { data: currentData, isLoading } = useSearchConsoleData('query');
+  const { data: previousData } = useSearchConsoleData('query', previousStartDate, previousEndDate);
 
   if (isLoading) {
     return (
@@ -17,24 +32,27 @@ export const KeywordsChart = () => {
     );
   }
 
-  // Filter data based on selected item if any
-  const chartData = selectedItem
-    ? data?.rows?.filter(item => item.keys[0] === selectedItem)
-    : data?.rows;
+  // Combine current and previous period data
+  const combinedData = currentData?.chartData?.map(current => {
+    const previousDay = previousData?.chartData?.find(prev => 
+      format(subDays(parseISO(prev.date), -daysDiff), 'yyyy-MM-dd') === current.date
+    );
 
-  // Transform data for the chart
-  const transformedData = data?.chartData?.map(item => ({
-    date: item.date,
-    clicks: item.clicks,
-    impressions: item.impressions,
-    keys: item.keys
-  })) || [];
+    return {
+      date: current.date,
+      clicks: current.clicks,
+      impressions: current.impressions,
+      previousClicks: previousDay?.clicks,
+      previousImpressions: previousDay?.impressions
+    };
+  }) || [];
 
   return (
-    <MetricsChart 
-      data={transformedData} 
-      title="Évolution des Positions"
+    <SearchAnalyticsChart 
+      data={combinedData} 
+      title="Évolution du Trafic"
       dimension="query"
+      showPreviousPeriod={true}
     />
   );
 };
