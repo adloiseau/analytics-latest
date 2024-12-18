@@ -1,41 +1,53 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useFirebaseAuth } from './FirebaseAuthContext';
 import { googleAuthClient } from '../services/googleAuth/client';
-import type { AuthState } from '../services/googleAuth/types';
+
+interface AuthState {
+  isAuthenticated: boolean;
+  accessToken: string | null;
+  isInitialized: boolean;
+}
 
 interface AuthContextType extends AuthState {
   login: () => void;
   logout: () => void;
-  isInitialized: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { currentUser, isAuthorized } = useFirebaseAuth();
   const [authState, setAuthState] = useState<AuthState>({
     isAuthenticated: false,
     accessToken: null,
+    isInitialized: false
   });
-  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const token = googleAuthClient.getAccessToken();
-        if (token) {
+        if (currentUser && isAuthorized) {
+          const token = googleAuthClient.getAccessToken();
           setAuthState({
-            isAuthenticated: true,
+            isAuthenticated: !!token,
             accessToken: token,
+            isInitialized: true
+          });
+        } else {
+          setAuthState({
+            isAuthenticated: false,
+            accessToken: null,
+            isInitialized: true
           });
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
-      } finally {
-        setIsInitialized(true);
+        setAuthState(prev => ({ ...prev, isInitialized: true }));
       }
     };
 
     initAuth();
-  }, []);
+  }, [currentUser, isAuthorized]);
 
   const login = () => {
     googleAuthClient.login();
@@ -46,11 +58,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAuthState({
       isAuthenticated: false,
       accessToken: null,
+      isInitialized: true
     });
   };
 
   return (
-    <AuthContext.Provider value={{ ...authState, isInitialized, login, logout }}>
+    <AuthContext.Provider value={{ ...authState, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

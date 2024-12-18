@@ -19,6 +19,9 @@ class GoogleAuthClientService {
   }
 
   login(): void {
+    // Clear any existing tokens
+    this.logout();
+
     const state = Math.random().toString(36).substring(7);
     storage.set(STORAGE_KEYS.AUTH_STATE, state);
 
@@ -58,10 +61,14 @@ class GoogleAuthClientService {
       }
 
       storage.set(STORAGE_KEYS.ACCESS_TOKEN, data.access_token);
-      storage.set(STORAGE_KEYS.REFRESH_TOKEN, data.refresh_token);
+      if (data.refresh_token) {
+        storage.set(STORAGE_KEYS.REFRESH_TOKEN, data.refresh_token);
+      }
       
+      storage.remove('is_authenticating');
       this.setupRefreshTimer(data.expires_in);
     } catch (error) {
+      storage.remove('is_authenticating');
       console.error('Error exchanging code for tokens:', error);
       throw error;
     }
@@ -101,18 +108,10 @@ class GoogleAuthClientService {
     storage.remove(STORAGE_KEYS.ACCESS_TOKEN);
     storage.remove(STORAGE_KEYS.REFRESH_TOKEN);
     storage.remove(STORAGE_KEYS.AUTH_STATE);
-    window.location.href = '/';
   }
 
   getAccessToken(): string | null {
-    const token = storage.get(STORAGE_KEYS.ACCESS_TOKEN);
-    if (!token) {
-      const refreshToken = storage.get(STORAGE_KEYS.REFRESH_TOKEN);
-      if (refreshToken) {
-        this.refreshToken();
-      }
-    }
-    return token;
+    return storage.get(STORAGE_KEYS.ACCESS_TOKEN);
   }
 }
 
