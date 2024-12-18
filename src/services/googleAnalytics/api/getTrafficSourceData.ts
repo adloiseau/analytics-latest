@@ -1,41 +1,64 @@
 import { subDays, format } from 'date-fns';
-import { GA_PROPERTY_IDS } from '../../../config/analytics.config';
 import { TrafficSourceData } from '../../../types/traffic';
-import { fetchPeriodData } from './fetchPeriodData';
 import { processSourceData } from './processSourceData';
 import { processTimelineData } from './processTimelineData';
 
 export async function getTrafficSourceData(
-  websiteUrl: string,
+  propertyId: string,
   accessToken: string,
   startDate: string,
   endDate: string
 ): Promise<{ sourceData: TrafficSourceData[], timelineData: TrafficSourceData[] }> {
   try {
-    const hostname = new URL(websiteUrl).hostname;
-    const propertyId = GA_PROPERTY_IDS[hostname];
+    console.log('[getTrafficSourceData] Starting data fetch...');
+    
+    // Fetch current period data
+    const response = await fetch(
+      `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          dateRanges: [{ startDate, endDate }],
+          dimensions: [
+            { name: 'date' },
+            { name: 'sessionSource' }
+          ],
+          metrics: [
+            { name: 'activeUsers' }
+          ],
+          orderBys: [
+            { dimension: { dimensionName: 'date' } }
+          ]
+        })
+      }
+    );
 
-    if (!propertyId) {
-      throw new Error(`No property ID found for ${hostname}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch traffic data: ${response.statusText}`);
     }
 
-    // Calculer la période précédente
-    const currentStartDate = new Date(startDate);
-    const currentEndDate = new Date(endDate);
-    const daysDiff = Math.ceil((currentEndDate.getTime() - currentStartDate.getTime()) / (1000 * 60 * 60 * 24));
-    
-    const previousStartDate = format(subDays(currentStartDate, daysDiff), 'yyyy-MM-dd');
-    const previousEndDate = format(subDays(currentEndDate, daysDiff), 'yyyy-MM-dd');
+    const data = await response.json();
+    console.log('[getTrafficSourceData] Raw response:', data);
 
-    // Récupérer les données pour les deux périodes
-    const [currentPeriod, previousPeriod] = await Promise.all([
-      fetchPeriodData(propertyId, accessToken, startDate, endDate),
-      fetchPeriodData(propertyId, accessToken, previousStartDate, previousEndDate)
-    ]);
+    // Process the data
+    const sourceData = processSourceData(data);
+    const timelineData = processTimelineData(data);
 
-    // Traiter les données avec les tendances
-    const sourceData = processSourceData(currentPeriod, previousPeriod);
-    const timelineData = processTimelineData(currentPeriod);
+    console.log('[getTrafficSourceData] Processed data:', {
+      totalProcessedRows: data.rowCount,
+      sourcesWithData: sourceData.length,
+      timelineDataPoints: timelineData.length
+    });
+
+    console.log('[getTrafficSourceData] Final result:', {
+      sourceDataLength: sourceData.length,
+      timelineDataLength: timelineData.length,
+      sources: sourceData
+    });
 
     return { sourceData, timelineData };
   } catch (error) {

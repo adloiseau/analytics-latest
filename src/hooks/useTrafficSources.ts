@@ -13,8 +13,19 @@ export const useTrafficSources = () => {
   const { dateRange } = useFilters();
   const { startDate, endDate } = getDateRange(dateRange);
 
-  const hostname = selectedSite ? new URL(selectedSite).hostname : null;
-  const propertyId = hostname ? GA_PROPERTY_IDS[hostname] : null;
+  // Validate URL and get hostname
+  const getPropertyId = (url: string | null) => {
+    if (!url) return null;
+    try {
+      const hostname = new URL(url).hostname;
+      return GA_PROPERTY_IDS[hostname] || null;
+    } catch (error) {
+      console.error('Invalid URL:', error);
+      return null;
+    }
+  };
+
+  const propertyId = getPropertyId(selectedSite);
 
   return useQuery(
     ['trafficSources', propertyId, dateRange],
@@ -26,10 +37,8 @@ export const useTrafficSources = () => {
       const data = await analyticsApi.getTrafficSourceData(
         propertyId,
         accessToken,
-        {
-          startDate,
-          endDate
-        }
+        startDate,
+        endDate
       );
 
       return data;

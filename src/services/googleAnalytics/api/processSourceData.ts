@@ -1,49 +1,39 @@
-import { AnalyticsApiResponse } from '../types';
+import { mapSourceName } from '../sourceMapping';
+import { TrafficSource } from '../../../types/traffic';
 
-export function processSourceData(data: AnalyticsApiResponse) {
-  if (!data.rows) {
-    return {
-      activeUsers: 0,
-      pageViews: 0,
-      activeUsersHistory: [],
-      pageViewsHistory: []
-    };
-  }
+export function processSourceData(data: any): TrafficSource[] {
+  if (!data?.rows) return [];
 
-  // Split rows into current and previous periods
-  const midPoint = Math.floor(data.rows.length / 2);
-  const currentPeriodRows = data.rows.slice(0, midPoint);
-  const previousPeriodRows = data.rows.slice(midPoint);
+  const sourceMap = new Map<string, TrafficSource>();
 
-  // Calculate totals for current period
-  const currentTotals = currentPeriodRows.reduce((acc, row) => ({
-    activeUsers: acc.activeUsers + parseInt(row.metricValues[0].value),
-    pageViews: acc.pageViews + parseInt(row.metricValues[1].value)
-  }), { activeUsers: 0, pageViews: 0 });
+  // Process each row of data
+  data.rows.forEach((row: any) => {
+    const source = mapSourceName(row.dimensionValues[1].value || '(direct)');
+    const visitors = parseInt(row.metricValues[0].value);
 
-  // Calculate totals for previous period
-  const previousTotals = previousPeriodRows.reduce((acc, row) => ({
-    activeUsers: acc.activeUsers + parseInt(row.metricValues[0].value),
-    pageViews: acc.pageViews + parseInt(row.metricValues[1].value)
-  }), { activeUsers: 0, pageViews: 0 });
+    if (!sourceMap.has(source)) {
+      sourceMap.set(source, {
+        name: source,
+        visitors: 0,
+        previousVisitors: 0,
+        trend: 0,
+        sparklineData: []
+      });
+    }
 
-  // Create history arrays for current period
-  const history = currentPeriodRows.map(row => ({
-    date: row.dimensionValues[0].value,
-    activeUsers: parseInt(row.metricValues[0].value),
-    pageViews: parseInt(row.metricValues[1].value)
-  }));
+    const sourceData = sourceMap.get(source)!;
+    sourceData.visitors += visitors;
+    sourceData.sparklineData.push(visitors);
+  });
 
-  return {
-    ...currentTotals,
-    previousPeriod: previousTotals,
-    activeUsersHistory: history.map(item => ({
-      date: item.date,
-      value: item.activeUsers
-    })),
-    pageViewsHistory: history.map(item => ({
-      date: item.date,
-      value: item.pageViews
+  // Convert Map to array and calculate trends
+  return Array.from(sourceMap.values())
+    .map(source => ({
+      ...source,
+      trend: source.previousVisitors > 0 
+        ? ((source.visitors - source.previousVisitors) / source.previousVisitors) * 100
+        : source.visitors > 0 ? 100 : 0,
+      hasSparkline: source.sparklineData.length > 0
     }))
-  };
+    .sort((a, b) => b.visitors - a.visitors);
 }
