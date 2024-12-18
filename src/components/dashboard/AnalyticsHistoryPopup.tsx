@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { format, parseISO, subDays } from 'date-fns';
@@ -90,7 +90,11 @@ export const AnalyticsHistoryPopup: React.FC<AnalyticsHistoryPopupProps> = ({
     return result;
   };
 
-  const chartData = prepareChartData();
+  const [chartData, setChartData] = useState(prepareChartData());
+
+  useEffect(() => {
+    setChartData(prepareChartData());
+  }, [analyticsMetrics, dateRange]);
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -172,9 +176,7 @@ export const AnalyticsHistoryPopup: React.FC<AnalyticsHistoryPopupProps> = ({
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-full flex items-center justify-center text-gray-400">
-              Aucune donnée historique disponible
-            </div>
+            <div className="text-gray-400 text-center">Aucune donnée disponible pour la période sélectionnée.</div>
           )}
         </div>
       </div>
