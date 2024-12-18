@@ -24,15 +24,6 @@ export function useSearchConsoleData(
     ? { startDate: customStartDate, endDate: customEndDate }
     : getDateRange(dateRange);
 
-  console.log('[useSearchConsoleData] Query params:', {
-    dimension,
-    dateRange,
-    startDate,
-    endDate,
-    selectedSite,
-    filterValue
-  });
-
   return useQuery(
     ['searchConsole', dimension, selectedSite, startDate, endDate, searchQuery, filterValue],
     async () => {
@@ -40,7 +31,6 @@ export function useSearchConsoleData(
         throw new Error('Authentication required');
       }
 
-      // For site dimension, fetch data for all sites
       if (dimension === 'site') {
         const { siteEntry: sites } = await searchConsoleApi.fetchSites(accessToken);
         if (!sites?.length) return { rows: [], chartData: [] };
@@ -66,7 +56,6 @@ export function useSearchConsoleData(
                 keys: [site.siteUrl]
               };
             } catch (error) {
-              console.error(`Error fetching data for ${site.siteUrl}:`, error);
               return {
                 keys: [site.siteUrl],
                 clicks: 0,
@@ -84,7 +73,6 @@ export function useSearchConsoleData(
         };
       }
 
-      // For other dimensions, require a selected site
       if (!selectedSite) {
         throw new Error('No site selected');
       }
@@ -96,14 +84,6 @@ export function useSearchConsoleData(
           expression: filterValue
         }]
       }] : [];
-
-      console.log('[useSearchConsoleData] Fetching data for site:', {
-        site: selectedSite,
-        startDate,
-        endDate,
-        filterValue,
-        dimensionFilterGroups
-      });
 
       const [dimensionResponse, timeResponse] = await Promise.all([
         searchConsoleApi.fetchSearchAnalytics(accessToken, selectedSite, {
@@ -122,26 +102,12 @@ export function useSearchConsoleData(
         })
       ]);
 
-      console.log('[useSearchConsoleData] API responses:', {
-        dimensionRows: dimensionResponse.rows?.length,
-        timeRows: timeResponse.rows?.length,
-        sampleDimensionRow: dimensionResponse.rows?.[0],
-        sampleTimeRow: timeResponse.rows?.[0]
-      });
-
       const rows = dimensionResponse.rows || [];
       const timeRows = timeResponse.rows || [];
 
       const filteredRows = filterData(rows, searchQuery);
       const deduplicatedRows = deduplicateTableData(filteredRows);
       const chartData = prepareChartData(timeRows);
-
-      console.log('[useSearchConsoleData] Processed data:', {
-        originalRows: rows.length,
-        filteredRows: filteredRows.length,
-        deduplicatedRows: deduplicatedRows.length,
-        chartDataPoints: chartData.length
-      });
 
       return { 
         rows: deduplicatedRows,
@@ -152,10 +118,7 @@ export function useSearchConsoleData(
       enabled: !!accessToken && !!isAuthenticated && (dimension === 'site' || !!selectedSite),
       staleTime: REFRESH_CONFIG.GSC_REFRESH_INTERVAL,
       keepPreviousData: true,
-      retry: 2,
-      onError: (error) => {
-        console.error('[useSearchConsoleData] Error:', error);
-      }
+      retry: 2
     }
   );
 }
