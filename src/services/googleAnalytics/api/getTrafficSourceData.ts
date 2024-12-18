@@ -1,88 +1,45 @@
-import { format, parseISO, subDays, eachDayOfInterval } from 'date-fns';
-import { mapSourceName } from '../sourceMapping';
-import { TRAFFIC_SOURCES } from '../../../config/traffic-sources.config';
+import { subDays, format } from 'date-fns';
+import { GA_PROPERTY_IDS } from '../../../config/analytics.config';
+import { TrafficSourceData } from '../../../types/traffic';
+import { fetchPeriodData } from './fetchPeriodData';
+import { processSourceData } from './processSourceData';
+import { processTimelineData } from './processTimelineData';
 
 export async function getTrafficSourceData(
-  propertyId: string,
+  websiteUrl: string,
   accessToken: string,
-  dateRange: { startDate: string; endDate: string }
-) {
+  startDate: string,
+  endDate: string
+): Promise<{ sourceData: TrafficSourceData[], timelineData: TrafficSourceData[] }> {
   try {
-    const response = await fetch(
-      `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          dateRanges: [{ 
-            startDate: dateRange.startDate, 
-            endDate: dateRange.endDate 
-          }],
-          dimensions: [
-            { name: 'date' },
-            { name: 'sessionSource' }
-          ],
-          metrics: [
-            { name: 'totalUsers' }
-          ],
-          orderBys: [
-            { dimension: { dimensionName: 'date' } }
-          ]
-        })
-      }
-    );
+    const hostname = new URL(websiteUrl).hostname;
+    const propertyId = GA_PROPERTY_IDS[hostname];
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch traffic source data: ${response.statusText}`);
+    if (!propertyId) {
+      throw new Error(`No property ID found for ${hostname}`);
     }
 
-    const data = await response.json();
+    // Calculer la période précédente
+    const currentStartDate = new Date(startDate);
+    const currentEndDate = new Date(endDate);
+    const daysDiff = Math.ceil((currentEndDate.getTime() - currentStartDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    const previousStartDate = format(subDays(currentStartDate, daysDiff), 'yyyy-MM-dd');
+    const previousEndDate = format(subDays(currentEndDate, daysDiff), 'yyyy-MM-dd');
 
-    const allDates = eachDayOfInterval({
-      start: parseISO(dateRange.startDate),
-      end: parseISO(dateRange.endDate)
-    }).map(date => format(date, 'yyyy-MM-dd'));
+    // Récupérer les données pour les deux périodes
+    const [currentPeriod, previousPeriod] = await Promise.all([
+      fetchPeriodData(propertyId, accessToken, startDate, endDate),
+      fetchPeriodData(propertyId, accessToken, previousStartDate, previousEndDate)
+    ]);
 
-    const timelineData = allDates.map(date => ({
-      date,
-      ...TRAFFIC_SOURCES.reduce((acc, source) => ({ ...acc, [source.name]: 0 }), {})
-    }));
+    // Traiter les données avec les tendances
+    const sourceData = processSourceData(currentPeriod, previousPeriod);
+    const timelineData = processTimelineData(currentPeriod);
 
-    const sourceTotals = {};
-
-    data.rows?.forEach(row => {
-      const date = row.dimensionValues[0].value;
-      const source = mapSourceName(row.dimensionValues[1].value || 'Other');
-      const visitors = parseInt(row.metricValues[0].value);
-
-      const dayData = timelineData.find(d => d.date === date);
-      if (dayData) {
-        dayData[source] = (dayData[source] || 0) + visitors;
-      }
-
-      sourceTotals[source] = (sourceTotals[source] || 0) + visitors;
-    });
-
-    const sourceData = TRAFFIC_SOURCES.map(sourceConfig => {
-      const visitors = sourceTotals[sourceConfig.name] || 0;
-      const sparklineData = timelineData.map(day => day[sourceConfig.name] || 0);
-
-      return {
-        name: sourceConfig.name,
-        visitors,
-        sparklineData,
-        color: sourceConfig.color
-      };
-    }).filter(source => source.visitors > 0);
-
-    return {
-      sourceData,
-      timelineData: timelineData.sort((a, b) => a.date.localeCompare(b.date))
-    };
+    return { sourceData, timelineData };
   } catch (error) {
+    console.error('Error fetching traffic source data:', error);
     throw error;
   }
 }

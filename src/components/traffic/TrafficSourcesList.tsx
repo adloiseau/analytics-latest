@@ -1,6 +1,7 @@
 import React from 'react';
 import { TrafficSourceItem } from './TrafficSourceItem';
 import { useTrafficSources } from '../../hooks/useTrafficSources';
+import { aggregateSourceData } from '../../utils/traffic';
 import { TRAFFIC_SOURCES } from '../../config/traffic-sources.config';
 
 export const TrafficSourcesList: React.FC = () => {
@@ -29,7 +30,7 @@ export const TrafficSourcesList: React.FC = () => {
     );
   }
 
-  const sources = data?.sourceData || [];
+  const sources = aggregateSourceData(data?.sourceData || []);
 
   return (
     <div className="bg-[#25262b]/90 backdrop-blur-sm rounded-lg p-4 border border-gray-800/10">

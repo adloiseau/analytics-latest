@@ -23,7 +23,7 @@ interface TrafficSourceItemProps {
 export const TrafficSourceItem: React.FC<TrafficSourceItemProps> = ({ source, config }) => {
   const { selectedSource, setSelectedSource } = useTrafficSource();
   const Icon = iconMap[config.icon as keyof typeof iconMap];
-  const trend = source.trend ? formatTrend(source.trend) : '+0.0%';
+  const trend = formatTrend(source.trend);
   const isPositiveTrend = source.trend >= 0;
   const isSelected = selectedSource === source.name;
 
@@ -53,15 +53,15 @@ export const TrafficSourceItem: React.FC<TrafficSourceItemProps> = ({ source, co
               {trend}
             </span>
             <span className="text-xs text-gray-500">
-              vs {source.previousVisitors?.toLocaleString() || 0}
+              vs {source.previousVisitors.toLocaleString()}
             </span>
           </div>
         </div>
         <div className="text-lg font-semibold text-white">
-          {source.visitors?.toLocaleString() || 0} visiteurs
+          {source.visitors.toLocaleString()} visiteurs
         </div>
       </div>
-      {source.sparklineData?.length > 0 && (
+      {source.sparklineData.length > 0 && (
         <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity">
           <SparklineChart 
             data={source.sparklineData} 
