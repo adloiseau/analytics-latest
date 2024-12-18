@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useFilters } from '../contexts/FilterContext';
 import { GA_PROPERTY_IDS } from '../config/analytics.config';
 import { REFRESH_CONFIG } from '../config/refresh';
+import { getDateRange } from '../utils/dates';
 import type { RealTimeMetrics } from '../types/analytics';
 
 export function useGoogleAnalytics(websiteUrl: string) {
@@ -31,10 +32,18 @@ export function useGoogleAnalytics(websiteUrl: string) {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const metricsData = await analyticsApi.getMetricsData(propertyId, accessToken, dateRange);
+
+        // Fetch metrics data with the current date range
+        const metricsData = await analyticsApi.getMetricsData(
+          propertyId,
+          accessToken,
+          dateRange
+        );
+
         setMetrics(metricsData);
         setError(null);
       } catch (err) {
+        console.error('Error fetching analytics data:', err);
         setError('Erreur lors de la récupération des données Google Analytics');
       } finally {
         setLoading(false);
@@ -42,15 +51,21 @@ export function useGoogleAnalytics(websiteUrl: string) {
     };
 
     fetchData();
-    
-    // Only set up intervals for realtime data
+
+    // Set up realtime data refresh
     const realtimeInterval = setInterval(async () => {
+      if (!metrics) return;
+
       try {
-        const metricsData = await analyticsApi.getMetricsData(propertyId, accessToken, dateRange);
-        setMetrics(prev => ({
-          ...prev!,
-          realtimeUsers: metricsData.realtimeUsers
-        }));
+        const realtimeData = await analyticsApi.getRealtimeData(
+          propertyId,
+          accessToken
+        );
+
+        setMetrics(prev => prev ? {
+          ...prev,
+          realtimeUsers: realtimeData.realtimeUsers
+        } : null);
       } catch (error) {
         console.error('Error updating realtime data:', error);
       }
@@ -59,7 +74,7 @@ export function useGoogleAnalytics(websiteUrl: string) {
     return () => {
       clearInterval(realtimeInterval);
     };
-  }, [websiteUrl, accessToken, isAuthenticated, dateRange]);
+  }, [websiteUrl, accessToken, isAuthenticated, dateRange]); // Added dateRange to dependencies
 
   return { metrics, loading, error };
 }

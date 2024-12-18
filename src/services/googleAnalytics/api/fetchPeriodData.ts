@@ -8,6 +8,15 @@ export async function fetchPeriodData(
   dateRange: DateRange
 ): Promise<AnalyticsApiResponse> {
   const { startDate, endDate } = getDateRange(dateRange);
+  
+  // Calculate previous period dates
+  const currentStartDate = new Date(startDate);
+  const currentEndDate = new Date(endDate);
+  const daysDiff = Math.ceil((currentEndDate.getTime() - currentStartDate.getTime()) / (1000 * 60 * 60 * 24));
+  const previousStartDate = new Date(currentStartDate);
+  const previousEndDate = new Date(currentEndDate);
+  previousStartDate.setDate(previousStartDate.getDate() - daysDiff);
+  previousEndDate.setDate(previousEndDate.getDate() - daysDiff);
 
   const response = await fetch(
     `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
@@ -19,7 +28,14 @@ export async function fetchPeriodData(
       },
       body: JSON.stringify({
         dateRanges: [
-          { startDate, endDate }
+          { 
+            startDate,
+            endDate
+          },
+          {
+            startDate: previousStartDate.toISOString().split('T')[0],
+            endDate: previousEndDate.toISOString().split('T')[0]
+          }
         ],
         dimensions: [
           { name: 'date' }
