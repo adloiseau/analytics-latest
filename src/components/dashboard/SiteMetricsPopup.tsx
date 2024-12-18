@@ -11,49 +11,22 @@ import type { SearchAnalyticsRow } from '../../services/googleAuth/types';
 interface SiteMetricsPopupProps {
   site: SearchAnalyticsRow;
   siteMetrics: any;
+  analyticsMetrics: any;
   onClose: () => void;
 }
 
 export const SiteMetricsPopup: React.FC<SiteMetricsPopupProps> = ({
   site,
   siteMetrics,
+  analyticsMetrics,
   onClose
 }) => {
   const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
   const { dateRange } = useFilters();
 
-  // Fetch historical data for all metrics
-  const { data: metricsHistory } = useQuery(
-    ['metricsHistory', site.keys[0], dateRange],
-    async () => {
-      const metrics = ['AS', 'BL', 'RD', 'KD', 'VI', 'TF', 'CF'];
-      const results = await Promise.all(
-        metrics.map(async (metric) => {
-          const history = await metricsService.getMetricsHistory(site.keys[0], metric, 90);
-          return {
-            metric,
-            history: history.map(item => ({
-              date: item.date,
-              value: item.value
-            }))
-          };
-        })
-      );
-      
-      return results.reduce((acc, { metric, history }) => {
-        acc[metric] = history;
-        return acc;
-      }, {} as Record<string, Array<{ date: string; value: number }>>);
-    },
-    {
-      enabled: !!site.keys[0],
-      staleTime: 5 * 60 * 1000
-    }
-  );
-
   // Filter out metrics that are already shown in the main view
   const additionalMetrics = Object.entries(METRIC_DEFINITIONS).filter(
-    ([key]) => ['AS', 'BL', 'RD', 'KD', 'VI', 'TF', 'CF'].includes(key)
+    ([key]) => ['AS', 'BL', 'RD', 'VI', 'TF', 'CF', 'pageViews'].includes(key)
   );
 
   return (
@@ -74,8 +47,13 @@ export const SiteMetricsPopup: React.FC<SiteMetricsPopupProps> = ({
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {additionalMetrics.map(([key, definition]) => {
-              const metricHistory = metricsHistory?.[key];
+              const metricHistory = key === 'pageViews' 
+                ? analyticsMetrics?.pageViewsHistory 
+                : siteMetrics?.[key]?.history;
               const sparklineData = metricHistory?.map(item => item.value);
+              const value = key === 'pageViews' 
+                ? analyticsMetrics?.pageViews 
+                : siteMetrics?.[key]?.value;
 
               return (
                 <div 
@@ -86,11 +64,12 @@ export const SiteMetricsPopup: React.FC<SiteMetricsPopupProps> = ({
                   <MetricBlock
                     type="custom"
                     label={definition.label}
-                    value={siteMetrics?.[key]?.value || 0}
+                    value={value || 0}
                     color={definition.color}
                     tooltip={definition.description}
                     sparklineData={sparklineData}
                     historicalData={metricHistory}
+                    isGAMetric={key === 'pageViews'}
                   />
                 </div>
               );

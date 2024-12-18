@@ -60,6 +60,7 @@ export const SiteMetricsRow: React.FC<SiteMetricsRowProps> = ({ site, previousPe
         <SiteMetricsPopup
           site={site}
           siteMetrics={siteMetrics}
+          analyticsMetrics={metrics}
           onClose={() => setShowMetricsPopup(false)}
         />
       )}

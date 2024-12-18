@@ -111,15 +111,15 @@ export const MetricsGrid: React.FC<MetricsGridProps> = ({
         />
       </div>
 
-      <div className="w-full cursor-pointer" onClick={() => onMetricClick('pageViews')}>
+      <div className="w-full cursor-pointer" onClick={() => onMetricClick('KD')}>
         <MetricBlock
           type="custom"
-          label="Pages vues"
-          value={analyticsMetrics?.pageViews || 0}
+          label="Keywords"
+          value={siteMetrics?.KD?.value || 0}
           color="#f59e0b"
-          historicalData={analyticsMetrics?.pageViewsHistory}
-          sparklineData={analyticsMetrics?.pageViewsHistory?.map(item => item.value)}
-          isGAMetric={true}
+          historicalData={siteMetrics?.KD?.history}
+          sparklineData={siteMetrics?.KD?.history?.map(item => item.value)}
+          isGAMetric={false}
         />
       </div>
 
