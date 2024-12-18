@@ -1,9 +1,16 @@
 import { RealTimeMetrics } from '../../types/analytics';
 
 export const analyticsApi = {
-  async getMetricsData(propertyId: string, accessToken: string): Promise<RealTimeMetrics> {
+  async getMetricsData(propertyId: string, accessToken: string, dateRange: { startDate: string, endDate: string }): Promise<RealTimeMetrics> {
     try {
-      // Récupérer les données historiques pour les 30 derniers jours
+      console.log('Fetching metrics data with date range:', dateRange);
+
+      // Validate date range
+      if (!dateRange.startDate || !dateRange.endDate) {
+        throw new Error('Invalid date range provided');
+      }
+
+      // Utiliser la plage de dates fournie
       const historicalResponse = await fetch(
         `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
         {
@@ -14,7 +21,7 @@ export const analyticsApi = {
           },
           body: JSON.stringify({
             dateRanges: [
-              { startDate: '30daysAgo', endDate: 'today' }
+              { startDate: dateRange.startDate, endDate: dateRange.endDate }
             ],
             dimensions: [{ name: 'date' }],
             metrics: [
@@ -53,8 +60,8 @@ export const analyticsApi = {
           },
           body: JSON.stringify({
             dateRanges: [
-              { startDate: '7daysAgo', endDate: 'today' },
-              { startDate: '14daysAgo', endDate: '8daysAgo' }
+              { startDate: dateRange.startDate, endDate: dateRange.endDate },
+              { startDate: dateRange.startDate, endDate: dateRange.endDate }
             ],
             metrics: [
               { name: 'activeUsers' },

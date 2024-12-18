@@ -34,10 +34,11 @@ export function useGoogleAnalytics(websiteUrl: string) {
         setLoading(true);
 
         // Fetch metrics data with the current date range
+        const dateRangeObj = getDateRange(dateRange);
         const metricsData = await analyticsApi.getMetricsData(
           propertyId,
           accessToken,
-          dateRange
+          dateRangeObj
         );
 
         setMetrics(metricsData);
