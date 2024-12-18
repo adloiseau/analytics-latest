@@ -1,6 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Menu, Home, LogOut } from 'lucide-react';
-import { GoogleAuthButton } from './GoogleAuthButton';
 import { DateRangeSelector } from './DateRangeSelector';
 import { useFilters } from '../contexts/FilterContext';
 import { useFirebaseAuth } from '../contexts/FirebaseAuthContext';
@@ -93,7 +92,6 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             >
               <Home size={20} />
             </Link>
-            <GoogleAuthButton compact />
             <button
               onClick={handleLogout}
               className="p-2.5 rounded-lg bg-[#25262b] text-gray-300 hover:text-white 

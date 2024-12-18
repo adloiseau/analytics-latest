@@ -126,7 +126,7 @@ export const MetricsGrid: React.FC<MetricsGridProps> = ({
       <div className="w-full cursor-pointer" onClick={() => onMetricClick('activeUsers')}>
         <MetricBlock
           type="custom"
-          label="Visiteurs 7j"
+          label="Utilisateurs actifs"
           value={analyticsMetrics?.activeUsers || 0}
           color="#ec4899"
           historicalData={analyticsMetrics?.activeUsersHistory}

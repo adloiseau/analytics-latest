@@ -1,11 +1,14 @@
 import { AnalyticsApiResponse } from '../types';
+import { DateRange } from '../../../types/filters';
+import { getDateRange } from '../../../utils/dates';
 
 export async function fetchPeriodData(
   propertyId: string, 
-  accessToken: string, 
-  startDate: string, 
-  endDate: string
+  accessToken: string,
+  dateRange: DateRange
 ): Promise<AnalyticsApiResponse> {
+  const { startDate, endDate } = getDateRange(dateRange);
+
   const response = await fetch(
     `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
     {
@@ -15,21 +18,22 @@ export async function fetchPeriodData(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        dateRanges: [{ startDate, endDate }],
+        dateRanges: [
+          { startDate, endDate }
+        ],
         dimensions: [
-          { name: 'date' },
-          { name: 'sessionSource' }
+          { name: 'date' }
         ],
         metrics: [
-          { name: 'sessions' }
+          { name: 'activeUsers' },
+          { name: 'screenPageViews' }
         ]
       })
     }
   );
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || `HTTP error! status: ${response.status}`);
+    throw new Error(`Failed to fetch analytics data: ${response.statusText}`);
   }
 
   return await response.json();

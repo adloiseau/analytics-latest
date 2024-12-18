@@ -1,21 +1,11 @@
-import { TrafficSourceData } from '../../../types/traffic';
-import { mapSourceName } from '../sourceMapping';
 import { AnalyticsApiResponse } from '../types';
 
-export function processTimelineData(currentPeriod: AnalyticsApiResponse): TrafficSourceData[] {
-  const timelineMap = new Map<string, TrafficSourceData>();
+export function processTimelineData(data: AnalyticsApiResponse) {
+  if (!data.rows) return [];
 
-  currentPeriod.rows?.forEach((row) => {
-    const date = row.dimensionValues[0].value;
-    const source = mapSourceName(row.dimensionValues[1].value);
-    const sessions = parseInt(row.metricValues[0].value);
-
-    if (!timelineMap.has(date)) {
-      timelineMap.set(date, { date });
-    }
-    const entry = timelineMap.get(date)!;
-    entry[source] = (entry[source] || 0) + sessions;
-  });
-
-  return Array.from(timelineMap.values());
+  return data.rows.map(row => ({
+    date: row.dimensionValues[0].value,
+    activeUsers: parseInt(row.metricValues[0].value),
+    pageViews: parseInt(row.metricValues[1].value)
+  }));
 }
