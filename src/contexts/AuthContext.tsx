@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useFirebaseAuth } from './FirebaseAuthContext';
 import { googleAuthClient } from '../services/googleAuth/client';
+import { useQueryClient } from 'react-query';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -17,6 +18,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, isAuthorized } = useFirebaseAuth();
+  const queryClient = useQueryClient();
   const [authState, setAuthState] = useState<AuthState>({
     isAuthenticated: false,
     accessToken: null,
@@ -33,6 +35,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             accessToken: token,
             isInitialized: true
           });
+
+          // Invalider et rafraîchir les requêtes après l'authentification
+          if (token) {
+            queryClient.invalidateQueries('searchConsole');
+            queryClient.invalidateQueries('analytics');
+          }
         } else {
           setAuthState({
             isAuthenticated: false,
@@ -47,7 +55,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     initAuth();
-  }, [currentUser, isAuthorized]);
+  }, [currentUser, isAuthorized, queryClient]);
 
   const login = () => {
     googleAuthClient.login();
@@ -60,6 +68,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       accessToken: null,
       isInitialized: true
     });
+    // Nettoyer le cache des requêtes lors de la déconnexion
+    queryClient.clear();
   };
 
   return (

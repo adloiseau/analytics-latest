@@ -9,19 +9,19 @@ interface SiteContextType {
 const SiteContext = createContext<SiteContextType | null>(null);
 
 export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { sites, loading } = useSearchConsoleSites();
+  const { data: sites, isLoading } = useSearchConsoleSites();
   const [selectedSite, setSelectedSite] = useState<string | null>(() => {
     return localStorage.getItem('selectedSite');
   });
 
   // Set default site when sites are loaded and no site is selected
   useEffect(() => {
-    if (!loading && sites.length > 0 && !selectedSite) {
+    if (!isLoading && sites?.length > 0 && !selectedSite) {
       const defaultSite = sites[0].siteUrl;
       localStorage.setItem('selectedSite', defaultSite);
       setSelectedSite(defaultSite);
     }
-  }, [loading, sites, selectedSite]);
+  }, [isLoading, sites, selectedSite]);
 
   const handleSiteChange = (site: string) => {
     localStorage.setItem('selectedSite', site);

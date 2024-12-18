@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from 'react-query';
 import { searchConsoleApi } from '../services/googleAuth/api';
-import { googleAuthClient } from '../services/googleAuth/client';
+import { useAuth } from '../contexts/AuthContext';
 
 export interface Site {
   siteUrl: string;
@@ -8,33 +8,22 @@ export interface Site {
 }
 
 export const useSearchConsoleSites = () => {
-  const [sites, setSites] = useState<Site[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { accessToken, isAuthenticated } = useAuth();
 
-  useEffect(() => {
-    const fetchSites = async () => {
-      const token = googleAuthClient.getAccessToken();
-      if (!token) return;
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await searchConsoleApi.fetchSites(token);
-        if (response.siteEntry) {
-          setSites(response.siteEntry);
-        }
-      } catch (err) {
-        setError('Erreur lors du chargement des sites');
-        console.error(err);
-      } finally {
-        setLoading(false);
+  return useQuery<Site[]>(
+    'sites',
+    async () => {
+      if (!accessToken) throw new Error('No access token');
+      const response = await searchConsoleApi.fetchSites(accessToken);
+      return response.siteEntry || [];
+    },
+    {
+      enabled: !!accessToken && isAuthenticated,
+      staleTime: 5 * 60 * 1000,
+      retry: 2,
+      onError: (error) => {
+        console.error('Error fetching sites:', error);
       }
-    };
-
-    fetchSites();
-  }, []);
-
-  return { sites, loading, error };
+    }
+  );
 };

@@ -2,10 +2,12 @@ import { GoogleAuthConfig } from './types';
 import { storage } from '../../utils/storage';
 import { STORAGE_KEYS } from '../../config/storage.config';
 import { refreshAccessToken } from './refreshToken';
+import { QueryClient } from 'react-query';
 
 class GoogleAuthClientService {
   private config: GoogleAuthConfig;
   private refreshTokenTimeout: NodeJS.Timeout | null = null;
+  private queryClient: QueryClient | null = null;
 
   constructor() {
     this.config = {
@@ -18,10 +20,16 @@ class GoogleAuthClientService {
     };
   }
 
-  login(): void {
-    // Clear any existing tokens
-    this.logout();
+  setQueryClient(client: QueryClient) {
+    this.queryClient = client;
+  }
 
+  getAccessToken(): string | null {
+    return storage.get(STORAGE_KEYS.ACCESS_TOKEN);
+  }
+
+  login(): void {
+    this.logout();
     const state = Math.random().toString(36).substring(7);
     storage.set(STORAGE_KEYS.AUTH_STATE, state);
 
@@ -67,6 +75,12 @@ class GoogleAuthClientService {
       
       storage.remove('is_authenticating');
       this.setupRefreshTimer(data.expires_in);
+
+      // Invalider et rafraîchir les requêtes après l'obtention du token
+      if (this.queryClient) {
+        await this.queryClient.invalidateQueries();
+        await this.queryClient.refetchQueries();
+      }
     } catch (error) {
       storage.remove('is_authenticating');
       console.error('Error exchanging code for tokens:', error);
@@ -74,12 +88,22 @@ class GoogleAuthClientService {
     }
   }
 
+  logout(): void {
+    if (this.refreshTokenTimeout) {
+      clearTimeout(this.refreshTokenTimeout);
+    }
+    storage.remove(STORAGE_KEYS.ACCESS_TOKEN);
+    storage.remove(STORAGE_KEYS.REFRESH_TOKEN);
+    storage.remove(STORAGE_KEYS.AUTH_STATE);
+    if (this.queryClient) {
+      this.queryClient.clear();
+    }
+  }
+
   private setupRefreshTimer(expiresIn: number): void {
     if (this.refreshTokenTimeout) {
       clearTimeout(this.refreshTokenTimeout);
     }
-
-    // Refresh 5 minutes before expiration
     const refreshTime = (expiresIn - 300) * 1000;
     this.refreshTokenTimeout = setTimeout(() => this.refreshToken(), refreshTime);
   }
@@ -99,19 +123,6 @@ class GoogleAuthClientService {
       console.error('Error refreshing token:', error);
       this.logout();
     }
-  }
-
-  logout(): void {
-    if (this.refreshTokenTimeout) {
-      clearTimeout(this.refreshTokenTimeout);
-    }
-    storage.remove(STORAGE_KEYS.ACCESS_TOKEN);
-    storage.remove(STORAGE_KEYS.REFRESH_TOKEN);
-    storage.remove(STORAGE_KEYS.AUTH_STATE);
-  }
-
-  getAccessToken(): string | null {
-    return storage.get(STORAGE_KEYS.ACCESS_TOKEN);
   }
 }
 
