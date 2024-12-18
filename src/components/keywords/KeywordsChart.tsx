@@ -17,13 +17,22 @@ export const KeywordsChart = () => {
     );
   }
 
-  const filteredData = selectedItem
-    ? data?.chartData?.filter(item => item.keys?.includes(selectedItem))
-    : data?.chartData;
+  // Filter data based on selected item if any
+  const chartData = selectedItem
+    ? data?.rows?.filter(item => item.keys[0] === selectedItem)
+    : data?.rows;
+
+  // Transform data for the chart
+  const transformedData = data?.chartData?.map(item => ({
+    date: item.date,
+    clicks: item.clicks,
+    impressions: item.impressions,
+    keys: item.keys
+  })) || [];
 
   return (
     <MetricsChart 
-      data={filteredData || []} 
+      data={transformedData} 
       title="Évolution des Positions"
       dimension="query"
     />

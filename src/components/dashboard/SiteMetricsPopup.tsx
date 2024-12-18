@@ -3,10 +3,8 @@ import { X } from 'lucide-react';
 import { MetricBlock } from './MetricBlock';
 import { METRIC_DEFINITIONS } from '../../types/metrics';
 import { MetricHistoryPopup } from './MetricHistoryPopup';
+import { AnalyticsHistoryPopup } from './AnalyticsHistoryPopup';
 import { useFilters } from '../../contexts/FilterContext';
-import { useQuery } from 'react-query';
-import { metricsService } from '../../services/supabase/metrics';
-import type { SearchAnalyticsRow } from '../../services/googleAuth/types';
 
 interface SiteMetricsPopupProps {
   site: SearchAnalyticsRow;
@@ -47,13 +45,13 @@ export const SiteMetricsPopup: React.FC<SiteMetricsPopupProps> = ({
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {additionalMetrics.map(([key, definition]) => {
-              const metricHistory = key === 'pageViews' 
-                ? analyticsMetrics?.pageViewsHistory 
-                : siteMetrics?.[key]?.history;
-              const sparklineData = metricHistory?.map(item => item.value);
               const value = key === 'pageViews' 
                 ? analyticsMetrics?.pageViews 
                 : siteMetrics?.[key]?.value;
+
+              const historicalData = key === 'pageViews'
+                ? analyticsMetrics?.pageViewsHistory
+                : undefined;
 
               return (
                 <div 
@@ -67,8 +65,7 @@ export const SiteMetricsPopup: React.FC<SiteMetricsPopupProps> = ({
                     value={value || 0}
                     color={definition.color}
                     tooltip={definition.description}
-                    sparklineData={sparklineData}
-                    historicalData={metricHistory}
+                    historicalData={historicalData}
                     isGAMetric={key === 'pageViews'}
                   />
                 </div>
@@ -78,7 +75,15 @@ export const SiteMetricsPopup: React.FC<SiteMetricsPopupProps> = ({
         </div>
       </div>
 
-      {selectedMetric && METRIC_DEFINITIONS[selectedMetric] && (
+      {selectedMetric === 'pageViews' && analyticsMetrics && (
+        <AnalyticsHistoryPopup
+          metricKey="pageViews"
+          analyticsMetrics={analyticsMetrics}
+          onClose={() => setSelectedMetric(null)}
+        />
+      )}
+
+      {selectedMetric && selectedMetric !== 'pageViews' && METRIC_DEFINITIONS[selectedMetric] && (
         <MetricHistoryPopup
           siteUrl={site.keys[0]}
           metricKey={selectedMetric}
