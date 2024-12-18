@@ -5,6 +5,7 @@ import { useFilters } from '../contexts/FilterContext';
 import { GA_PROPERTY_IDS } from '../config/analytics.config';
 import { REFRESH_CONFIG } from '../config/refresh';
 import { getDateRange } from '../utils/dates';
+import { format, parseISO, subDays } from 'date-fns';
 import type { RealTimeMetrics } from '../types/analytics';
 
 export function useGoogleAnalytics(websiteUrl: string) {
@@ -34,13 +35,45 @@ export function useGoogleAnalytics(websiteUrl: string) {
         setLoading(true);
 
         // Fetch metrics data with the current date range
+        const dateRangeObj = getDateRange(dateRange);
         const metricsData = await analyticsApi.getMetricsData(
           propertyId,
           accessToken,
-          dateRange
+          dateRangeObj
         );
 
-        setMetrics(metricsData);
+        // Correct calculation of previous period dates
+        const currentStartDate = parseISO(dateRangeObj.startDate);
+        const currentEndDate = parseISO(dateRangeObj.endDate);
+        const daysDiff = Math.ceil((currentEndDate.getTime() - currentStartDate.getTime()) / (1000 * 60 * 60 * 24));
+
+        const previousStartDate = format(subDays(currentStartDate, daysDiff), 'yyyy-MM-dd');
+        const previousEndDate = format(subDays(currentEndDate, daysDiff), 'yyyy-MM-dd');
+
+        const previousPeriodData = await analyticsApi.getMetricsData(
+          propertyId,
+          accessToken,
+          {
+            startDate: previousStartDate,
+            endDate: previousEndDate
+          }
+        );
+
+        // Update metrics with historical data
+        const historicalData = await analyticsApi.getHistoricalData(propertyId, accessToken, dateRangeObj);
+        setMetrics(prev => prev ? {
+          ...prev,
+          pageViewsHistory: historicalData.pageViewsHistory,
+          activeUsersHistory: historicalData.activeUsersHistory,
+          previousPageViewsHistory: previousPeriodData.pageViewsHistory,
+          previousActiveUsersHistory: previousPeriodData.activeUsersHistory
+        } : {
+          ...metricsData,
+          pageViewsHistory: historicalData.pageViewsHistory,
+          activeUsersHistory: historicalData.activeUsersHistory,
+          previousPageViewsHistory: previousPeriodData.pageViewsHistory,
+          previousActiveUsersHistory: previousPeriodData.activeUsersHistory
+        });
         setError(null);
       } catch (err) {
         console.error('Error fetching analytics data:', err);

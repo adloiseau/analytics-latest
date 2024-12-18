@@ -1,46 +1,17 @@
 import { RealTimeMetrics } from '../../types/analytics';
+import { getTrafficSourceData } from './api/getTrafficSourceData';
 
 export const analyticsApi = {
-  async getMetricsData(propertyId: string, accessToken: string): Promise<RealTimeMetrics> {
+  getTrafficSourceData,
+  async getMetricsData(propertyId: string, accessToken: string, dateRange: { startDate: string, endDate: string }): Promise<RealTimeMetrics> {
     try {
-      // Récupérer les données historiques pour les 30 derniers jours
-      const historicalResponse = await fetch(
-        `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            dateRanges: [
-              { startDate: '30daysAgo', endDate: 'today' }
-            ],
-            dimensions: [{ name: 'date' }],
-            metrics: [
-              { name: 'activeUsers' },
-              { name: 'screenPageViews' }
-            ]
-          })
-        }
-      );
-
-      if (!historicalResponse.ok) {
-        throw new Error('Failed to fetch historical data');
+      // Validate date range
+      if (!dateRange.startDate || !dateRange.endDate) {
+        throw new Error('Invalid date range provided');
       }
 
-      const historicalData = await historicalResponse.json();
-      
-      // Transformer les données historiques
-      const pageViewsHistory = historicalData.rows?.map(row => ({
-        date: row.dimensionValues[0].value,
-        value: parseInt(row.metricValues[1].value)
-      })) || [];
-
-      const activeUsersHistory = historicalData.rows?.map(row => ({
-        date: row.dimensionValues[0].value,
-        value: parseInt(row.metricValues[0].value)
-      })) || [];
+      // Utiliser la plage de dates fournie
+      const { pageViewsHistory, activeUsersHistory } = await analyticsApi.getHistoricalData(propertyId, accessToken, dateRange);
 
       // Récupérer les données actuelles vs période précédente
       const response = await fetch(
@@ -53,8 +24,8 @@ export const analyticsApi = {
           },
           body: JSON.stringify({
             dateRanges: [
-              { startDate: '7daysAgo', endDate: 'today' },
-              { startDate: '14daysAgo', endDate: '8daysAgo' }
+              { startDate: dateRange.startDate, endDate: dateRange.endDate },
+              { startDate: dateRange.startDate, endDate: dateRange.endDate }
             ],
             metrics: [
               { name: 'activeUsers' },
@@ -110,5 +81,46 @@ export const analyticsApi = {
     } catch (error) {
       throw error;
     }
-  }
+  },
+
+  async getHistoricalData(propertyId: string, accessToken: string, dateRange: { startDate: string, endDate: string }): Promise<{ pageViewsHistory: any[], activeUsersHistory: any[] }> {
+    const historicalResponse = await fetch(
+      `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          dateRanges: [
+            { startDate: dateRange.startDate, endDate: dateRange.endDate }
+          ],
+          dimensions: [{ name: 'date' }],
+          metrics: [
+            { name: 'activeUsers' },
+            { name: 'screenPageViews' }
+          ]
+        })
+      }
+    );
+
+    if (!historicalResponse.ok) {
+      throw new Error('Failed to fetch historical data');
+    }
+
+    const historicalData = await historicalResponse.json();
+    
+    const pageViewsHistory = historicalData.rows?.map(row => ({
+      date: row.dimensionValues[0].value,
+      value: parseInt(row.metricValues[1].value)
+    })) || [];
+
+    const activeUsersHistory = historicalData.rows?.map(row => ({
+      date: row.dimensionValues[0].value,
+      value: parseInt(row.metricValues[0].value)
+    })) || [];
+
+    return { pageViewsHistory, activeUsersHistory };
+  },
 };

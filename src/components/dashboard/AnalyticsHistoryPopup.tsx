@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { format, parseISO, subDays } from 'date-fns';
@@ -50,6 +50,12 @@ export const AnalyticsHistoryPopup: React.FC<AnalyticsHistoryPopupProps> = ({
   const config = metricConfig[metricKey];
   const trend = config.previous ? ((config.current - config.previous) / config.previous) * 100 : null;
 
+  // Ensure the previous period data is correctly aligned
+  const previousData = [...(analyticsMetrics.previousPageViewsHistory || [])].map(item => ({
+    ...item,
+    date: format(parseISO(item.date), 'yyyy-MM-dd')
+  })).sort((a, b) => a.date.localeCompare(b.date));
+
   // Préparer les données pour la période actuelle et précédente
   const prepareChartData = () => {
     if (!config.history || config.history.length === 0) return [];
@@ -71,7 +77,7 @@ export const AnalyticsHistoryPopup: React.FC<AnalyticsHistoryPopupProps> = ({
     currentPeriodData.forEach(item => {
       const currentDate = parseISO(item.date);
       const previousDate = format(subDays(currentDate, daysDiff), 'yyyy-MM-dd');
-      const previousItem = allData.find(d => d.date === previousDate);
+      const previousItem = previousData.find(d => d.date === previousDate);
 
       result.push({
         date: item.date,
@@ -84,7 +90,11 @@ export const AnalyticsHistoryPopup: React.FC<AnalyticsHistoryPopupProps> = ({
     return result;
   };
 
-  const chartData = prepareChartData();
+  const [chartData, setChartData] = useState(prepareChartData());
+
+  useEffect(() => {
+    setChartData(prepareChartData());
+  }, [analyticsMetrics, dateRange]);
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -124,8 +134,8 @@ export const AnalyticsHistoryPopup: React.FC<AnalyticsHistoryPopupProps> = ({
 
         <div className="h-[400px]">
           {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
+            <ResponsiveContainer width="100%" height={400}>
+              <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                 <XAxis 
                   dataKey="displayDate"
@@ -161,29 +171,12 @@ export const AnalyticsHistoryPopup: React.FC<AnalyticsHistoryPopupProps> = ({
                 <Legend 
                   formatter={(value) => value === 'value' ? 'Période actuelle' : 'Période précédente'}
                 />
-                <Line
-                  name="value"
-                  type="monotone"
-                  dataKey="value"
-                  stroke={config.color}
-                  strokeWidth={2}
-                  dot={{ r: 4, strokeWidth: 2 }}
-                />
-                <Line
-                  name="previousValue"
-                  type="monotone"
-                  dataKey="previousValue"
-                  stroke="#4B5563"
-                  strokeWidth={2}
-                  strokeDasharray="5 5"
-                  dot={{ r: 4, strokeWidth: 2 }}
-                />
+                <Line type="monotone" dataKey="value" stroke={config.color} name="Période actuelle" />
+                <Line type="monotone" dataKey="previousValue" stroke="#8884d8" name="Période précédente" strokeDasharray="5 5" />
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-full flex items-center justify-center text-gray-400">
-              Aucune donnée historique disponible
-            </div>
+            <div className="text-gray-400 text-center">Aucune donnée disponible pour la période sélectionnée.</div>
           )}
         </div>
       </div>

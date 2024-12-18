@@ -10,8 +10,6 @@ export const analyticsApi = {
   ): Promise<RealTimeMetrics> {
     try {
       const { startDate, endDate } = getDateRange(dateRange);
-      console.log('[GA API] Fetching metrics with dates:', { startDate, endDate });
-
       // Fetch historical data for current period
       const historicalResponse = await fetch(
         `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
@@ -39,8 +37,6 @@ export const analyticsApi = {
       }
 
       const historicalData = await historicalResponse.json();
-      console.log('[GA API] Historical data response:', historicalData);
-
       // Calculate previous period dates
       const currentStartDate = new Date(startDate);
       const currentEndDate = new Date(endDate);
@@ -80,8 +76,6 @@ export const analyticsApi = {
       }
 
       const previousData = await previousResponse.json();
-      console.log('[GA API] Previous period data:', previousData);
-
       // Calculate totals for current period
       const currentTotals = historicalData.rows?.reduce((acc, row) => ({
         activeUsers: acc.activeUsers + parseInt(row.metricValues[0].value),
@@ -135,8 +129,6 @@ export const analyticsApi = {
         pageViewsHistory,
         activeUsersHistory
       };
-
-      console.log('[GA API] Final processed metrics:', result);
       return result;
     } catch (error) {
       console.error('[GA API] Error fetching analytics data:', error);
