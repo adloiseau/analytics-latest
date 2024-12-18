@@ -34,23 +34,25 @@ export function useGoogleAnalytics(websiteUrl: string) {
       try {
         setLoading(true);
 
-        // Fetch metrics data with the current date range
+        // Get date range based on selected filter
         const dateRangeObj = getDateRange(dateRange);
+
+        // Calculate previous period dates
+        const currentStartDate = parseISO(dateRangeObj.startDate);
+        const currentEndDate = parseISO(dateRangeObj.endDate);
+        const daysDiff = Math.ceil((currentEndDate.getTime() - currentStartDate.getTime()) / (1000 * 60 * 60 * 24));
+        const previousStartDate = format(subDays(currentStartDate, daysDiff), 'yyyy-MM-dd');
+        const previousEndDate = format(subDays(currentEndDate, daysDiff), 'yyyy-MM-dd');
+
+        // Fetch current period data
         const metricsData = await analyticsApi.getMetricsData(
           propertyId,
           accessToken,
           dateRangeObj
         );
 
-        // Correct calculation of previous period dates
-        const currentStartDate = parseISO(dateRangeObj.startDate);
-        const currentEndDate = parseISO(dateRangeObj.endDate);
-        const daysDiff = Math.ceil((currentEndDate.getTime() - currentStartDate.getTime()) / (1000 * 60 * 60 * 24));
-
-        const previousStartDate = format(subDays(currentStartDate, daysDiff), 'yyyy-MM-dd');
-        const previousEndDate = format(subDays(currentEndDate, daysDiff), 'yyyy-MM-dd');
-
-        const previousPeriodData = await analyticsApi.getMetricsData(
+        // Fetch previous period data
+        const previousPeriodData = await analyticsApi.getHistoricalData(
           propertyId,
           accessToken,
           {
@@ -59,21 +61,16 @@ export function useGoogleAnalytics(websiteUrl: string) {
           }
         );
 
-        // Update metrics with historical data
-        const historicalData = await analyticsApi.getHistoricalData(propertyId, accessToken, dateRangeObj);
-        setMetrics(prev => prev ? {
+        // Update metrics with both current and previous period data
+        setMetrics(prev => ({
           ...prev,
-          pageViewsHistory: historicalData.pageViewsHistory,
-          activeUsersHistory: historicalData.activeUsersHistory,
-          previousPageViewsHistory: previousPeriodData.pageViewsHistory,
-          previousActiveUsersHistory: previousPeriodData.activeUsersHistory
-        } : {
           ...metricsData,
-          pageViewsHistory: historicalData.pageViewsHistory,
-          activeUsersHistory: historicalData.activeUsersHistory,
+          pageViewsHistory: metricsData.pageViewsHistory,
+          activeUsersHistory: metricsData.activeUsersHistory,
           previousPageViewsHistory: previousPeriodData.pageViewsHistory,
           previousActiveUsersHistory: previousPeriodData.activeUsersHistory
-        });
+        }));
+
         setError(null);
       } catch (err) {
         console.error('Error fetching analytics data:', err);
@@ -107,7 +104,7 @@ export function useGoogleAnalytics(websiteUrl: string) {
     return () => {
       clearInterval(realtimeInterval);
     };
-  }, [websiteUrl, accessToken, isAuthenticated, dateRange]); // Added dateRange to dependencies
+  }, [websiteUrl, accessToken, isAuthenticated, dateRange]);
 
   return { metrics, loading, error };
 }
