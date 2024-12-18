@@ -11,43 +11,7 @@ export const analyticsApi = {
       }
 
       // Utiliser la plage de dates fournie
-      const historicalResponse = await fetch(
-        `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            dateRanges: [
-              { startDate: dateRange.startDate, endDate: dateRange.endDate }
-            ],
-            dimensions: [{ name: 'date' }],
-            metrics: [
-              { name: 'activeUsers' },
-              { name: 'screenPageViews' }
-            ]
-          })
-        }
-      );
-
-      if (!historicalResponse.ok) {
-        throw new Error('Failed to fetch historical data');
-      }
-
-      const historicalData = await historicalResponse.json();
-      
-      // Transformer les données historiques
-      const pageViewsHistory = historicalData.rows?.map(row => ({
-        date: row.dimensionValues[0].value,
-        value: parseInt(row.metricValues[1].value)
-      })) || [];
-
-      const activeUsersHistory = historicalData.rows?.map(row => ({
-        date: row.dimensionValues[0].value,
-        value: parseInt(row.metricValues[0].value)
-      })) || [];
+      const { pageViewsHistory, activeUsersHistory } = await analyticsApi.getHistoricalData(propertyId, accessToken, dateRange);
 
       // Récupérer les données actuelles vs période précédente
       const response = await fetch(
@@ -117,5 +81,46 @@ export const analyticsApi = {
     } catch (error) {
       throw error;
     }
-  }
+  },
+
+  async getHistoricalData(propertyId: string, accessToken: string, dateRange: { startDate: string, endDate: string }): Promise<{ pageViewsHistory: any[], activeUsersHistory: any[] }> {
+    const historicalResponse = await fetch(
+      `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          dateRanges: [
+            { startDate: dateRange.startDate, endDate: dateRange.endDate }
+          ],
+          dimensions: [{ name: 'date' }],
+          metrics: [
+            { name: 'activeUsers' },
+            { name: 'screenPageViews' }
+          ]
+        })
+      }
+    );
+
+    if (!historicalResponse.ok) {
+      throw new Error('Failed to fetch historical data');
+    }
+
+    const historicalData = await historicalResponse.json();
+    
+    const pageViewsHistory = historicalData.rows?.map(row => ({
+      date: row.dimensionValues[0].value,
+      value: parseInt(row.metricValues[1].value)
+    })) || [];
+
+    const activeUsersHistory = historicalData.rows?.map(row => ({
+      date: row.dimensionValues[0].value,
+      value: parseInt(row.metricValues[0].value)
+    })) || [];
+
+    return { pageViewsHistory, activeUsersHistory };
+  },
 };
