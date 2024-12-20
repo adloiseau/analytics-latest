@@ -35,6 +35,7 @@ export const FirebaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log('Auth state changed:', { hasUser: !!user });
       setCurrentUser(user);
       const authorized = isUserAuthorized(user);
       setIsAuthorized(authorized);
@@ -47,11 +48,21 @@ export const FirebaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
         // Check if we need to initiate Google OAuth
         const hasGoogleTokens = storage.get(STORAGE_KEYS.ACCESS_TOKEN);
         const isAuthenticating = storage.get('is_authenticating');
+        const isCallback = window.location.pathname === '/auth/callback';
         
-        if (!hasGoogleTokens && !isAuthenticating) {
+        console.log('Auth state:', { hasGoogleTokens, isAuthenticating, isCallback });
+        
+        if (!hasGoogleTokens && !isAuthenticating && !isCallback) {
+          console.log('Initiating Google OAuth flow');
           storage.set('is_authenticating', 'true');
           googleAuthClient.login();
         }
+      } else {
+        // Clean up tokens if user is not authorized
+        storage.remove('firebase_token');
+        storage.remove(STORAGE_KEYS.ACCESS_TOKEN);
+        storage.remove(STORAGE_KEYS.REFRESH_TOKEN);
+        storage.remove('is_authenticating');
       }
       
       setLoading(false);
@@ -62,9 +73,11 @@ export const FirebaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const signInWithGoogle = async () => {
     try {
+      console.log('Starting Google sign in...');
       const result = await signInWithPopup(auth, googleProvider);
       
       if (!isUserAuthorized(result.user)) {
+        console.log('User not authorized, signing out');
         await firebaseSignOut(auth);
         throw new Error('Email non autorisé');
       }
@@ -80,6 +93,7 @@ export const FirebaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const signOut = async () => {
     try {
+      console.log('Signing out...');
       await firebaseSignOut(auth);
       googleAuthClient.logout();
       storage.remove('firebase_token');

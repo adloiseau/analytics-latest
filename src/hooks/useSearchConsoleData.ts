@@ -16,7 +16,7 @@ export function useSearchConsoleData(
   customEndDate?: string,
   filterValue?: string
 ) {
-  const { accessToken, isAuthenticated } = useAuth();
+  const { accessToken, isAuthenticated, isInitialized } = useAuth();
   const { selectedSite } = useSite();
   const { dateRange, searchQuery } = useFilters();
 
@@ -27,8 +27,8 @@ export function useSearchConsoleData(
   return useQuery(
     ['searchConsole', dimension, selectedSite, startDate, endDate, searchQuery, filterValue],
     async () => {
-      if (!accessToken || !isAuthenticated) {
-        throw new Error('Authentication required');
+      if (!accessToken) {
+        throw new Error('No access token');
       }
 
       if (dimension === 'site') {
@@ -56,6 +56,7 @@ export function useSearchConsoleData(
                 keys: [site.siteUrl]
               };
             } catch (error) {
+              console.error(`Error fetching data for ${site.siteUrl}:`, error);
               return {
                 keys: [site.siteUrl],
                 clicks: 0,
@@ -77,28 +78,26 @@ export function useSearchConsoleData(
         throw new Error('No site selected');
       }
 
-      const dimensionFilterGroups = filterValue ? [{
-        filters: [{
-          dimension,
-          operator: 'equals',
-          expression: filterValue
-        }]
-      }] : [];
-
       const [dimensionResponse, timeResponse] = await Promise.all([
         searchConsoleApi.fetchSearchAnalytics(accessToken, selectedSite, {
           startDate,
           endDate,
           dimensions: [dimension],
           rowLimit: 1000,
-          dimensionFilterGroups
+          dimensionFilterGroups: filterValue ? [{
+            filters: [{
+              dimension,
+              operator: 'equals',
+              expression: filterValue
+            }]
+          }] : []
         }),
         searchConsoleApi.fetchSearchAnalytics(accessToken, selectedSite, {
           startDate,
           endDate,
           dimensions: ['date'],
           rowLimit: 1000,
-          dimensionFilterGroups
+          dimensionFilterGroups: []
         })
       ]);
 
@@ -115,10 +114,13 @@ export function useSearchConsoleData(
       };
     },
     {
-      enabled: !!accessToken && !!isAuthenticated && (dimension === 'site' || !!selectedSite),
+      enabled: !!accessToken && isAuthenticated && isInitialized && (dimension === 'site' || !!selectedSite),
       staleTime: REFRESH_CONFIG.GSC_REFRESH_INTERVAL,
       keepPreviousData: true,
-      retry: 2
+      retry: 1,
+      onError: (error) => {
+        console.error(`Error fetching ${dimension} data:`, error);
+      }
     }
   );
 }

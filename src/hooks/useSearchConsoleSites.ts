@@ -8,19 +8,22 @@ export interface Site {
 }
 
 export const useSearchConsoleSites = () => {
-  const { accessToken, isAuthenticated } = useAuth();
+  const { accessToken, isAuthenticated, isInitialized } = useAuth();
 
   return useQuery<Site[]>(
     'sites',
     async () => {
-      if (!accessToken) throw new Error('No access token');
+      if (!accessToken) {
+        console.error('No access token available');
+        throw new Error('No access token');
+      }
       const response = await searchConsoleApi.fetchSites(accessToken);
       return response.siteEntry || [];
     },
     {
-      enabled: !!accessToken && isAuthenticated,
+      enabled: !!accessToken && isAuthenticated && isInitialized,
       staleTime: 5 * 60 * 1000,
-      retry: 2,
+      retry: 1,
       onError: (error) => {
         console.error('Error fetching sites:', error);
       }
