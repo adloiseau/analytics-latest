@@ -5,7 +5,7 @@ export interface SiteMetrics {
   id: number;
   site_url: string;
   date: string;
-  metric_type: 'TO' | 'AS' | 'BL' | 'RD' | 'KD' | 'VI' | 'TF' | 'CF';
+  metric_type: 'TO' | 'AS' | 'BL' | 'RD' | 'KD' | 'VI' | 'TF_root' | 'CF_root' | 'TF_subdomain' | 'CF_subdomain';
   value: number;
 }
 
@@ -78,16 +78,28 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
     description: 'Pourcentage de visibilité dans les résultats de recherche',
     color: '#f59e0b'
   },
-  TF: {
-    key: 'TF',
-    label: 'Trust Flow',
-    description: 'Indicateur de confiance',
+  TF_root: {
+    key: 'TF_root',
+    label: 'Trust Flow (Root)',
+    description: 'Indicateur de confiance du domaine racine',
     color: '#14b8a6'
   },
-  CF: {
-    key: 'CF',
-    label: 'Citation Flow',
-    description: 'Indicateur de popularité',
+  CF_root: {
+    key: 'CF_root',
+    label: 'Citation Flow (Root)',
+    description: 'Indicateur de popularité du domaine racine',
     color: '#f43f5e'
+  },
+  TF_subdomain: {
+    key: 'TF_subdomain',
+    label: 'Trust Flow (Sous-domaine)',
+    description: 'Indicateur de confiance du sous-domaine',
+    color: '#06b6d4'
+  },
+  CF_subdomain: {
+    key: 'CF_subdomain',
+    label: 'Citation Flow (Sous-domaine)',
+    description: 'Indicateur de popularité du sous-domaine',
+    color: '#8b5cf6'
   }
 };

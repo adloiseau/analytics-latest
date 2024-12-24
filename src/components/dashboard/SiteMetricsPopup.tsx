@@ -22,9 +22,9 @@ export const SiteMetricsPopup: React.FC<SiteMetricsPopupProps> = ({
   const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
   const { dateRange } = useFilters();
 
-  // Filter out metrics that are already shown in the main view
+  // Filter out metrics that are already shown in the main view and include new metrics
   const additionalMetrics = Object.entries(METRIC_DEFINITIONS).filter(
-    ([key]) => ['AS', 'BL', 'RD', 'VI', 'TF', 'CF', 'pageViews'].includes(key)
+    ([key]) => ['AS', 'BL', 'RD', 'VI', 'TF_root', 'CF_root', 'TF_subdomain', 'CF_subdomain', 'pageViews'].includes(key)
   );
 
   return (
