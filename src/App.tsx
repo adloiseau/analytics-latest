@@ -11,6 +11,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Top } from './pages/Top';
 import { Keywords } from './pages/Keywords';
 import { TrafficBySource } from './pages/TrafficBySource';
+import { ExpiredDomains } from './pages/ExpiredDomains';
 import { AuthCallback } from './pages/AuthCallback';
 
 function App() {
@@ -52,6 +53,14 @@ function App() {
                   element={
                     <PrivateRoute>
                       <TrafficBySource />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/expired-domains"
+                  element={
+                    <PrivateRoute>
+                      <ExpiredDomains />
                     </PrivateRoute>
                   }
                 />
