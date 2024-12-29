@@ -36,13 +36,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const isAuthenticating = storage.get('is_authenticating');
           const isCallback = window.location.pathname === '/auth/callback';
 
-          console.log('[AuthContext] Auth state:', { 
-            hasToken: !!token, 
+          console.log('[AuthContext] Current token state:', { 
+            hasToken: !!token,
+            token: token ? `${token.substring(0, 10)}...` : undefined,
             isAuthenticating, 
             isCallback 
           });
 
           if (token) {
+            console.log('[AuthContext] Setting auth state with token');
             setAuthState({
               isAuthenticated: true,
               accessToken: token,

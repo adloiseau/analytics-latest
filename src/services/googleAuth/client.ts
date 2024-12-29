@@ -31,7 +31,9 @@ class GoogleAuthClientService {
   }
 
   getAccessToken(): string | null {
-    return storage.get(STORAGE_KEYS.ACCESS_TOKEN);
+    const token = storage.get(STORAGE_KEYS.ACCESS_TOKEN);
+    console.log('Current access token:', token ? `${token.substring(0, 10)}...` : null);
+    return token;
   }
 
   login(): void {
