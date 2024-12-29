@@ -4,11 +4,11 @@ import { useFilters } from '../../contexts/FilterContext';
 import { format, parseISO, subDays } from 'date-fns';
 import { getDateRange } from '../../utils/dates';
 import { SearchAnalyticsChart } from '../metrics/SearchAnalyticsChart';
-import { useSelectedItem } from '../../contexts/SelectedItemContext';
+import { useSite } from '../../contexts/SiteContext';
 
 export const KeywordsChart = () => {
   const { dateRange } = useFilters();
-  const { selectedItem } = useSelectedItem();
+  const { selectedSite } = useSite();
   const { startDate, endDate } = getDateRange(dateRange);
 
   // Calculate previous period dates
@@ -19,8 +19,16 @@ export const KeywordsChart = () => {
   const previousEndDate = format(subDays(currentEndDate, daysDiff), 'yyyy-MM-dd');
 
   // Fetch data for current and previous periods
-  const { data: currentData, isLoading } = useSearchConsoleData('query');
+  const { data: currentData, isLoading } = useSearchConsoleData('query', startDate, endDate);
   const { data: previousData } = useSearchConsoleData('query', previousStartDate, previousEndDate);
+
+  if (!selectedSite) {
+    return (
+      <div className="bg-[#25262b]/90 backdrop-blur-sm rounded-lg p-4">
+        <div className="text-gray-400 text-center">Veuillez sélectionner un site</div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

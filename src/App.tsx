@@ -18,8 +18,8 @@ function App() {
   return (
     <FirebaseAuthProvider>
       <AuthProvider>
-        <SiteProvider>
-          <FilterProvider>
+        <FilterProvider>
+          <SiteProvider>
             <SelectedItemProvider>
               <Routes>
                 <Route path="/login" element={<LoginForm />} />
@@ -66,8 +66,8 @@ function App() {
                 />
               </Routes>
             </SelectedItemProvider>
-          </FilterProvider>
-        </SiteProvider>
+          </SiteProvider>
+        </FilterProvider>
       </AuthProvider>
     </FirebaseAuthProvider>
   );

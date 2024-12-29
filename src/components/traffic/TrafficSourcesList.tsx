@@ -2,9 +2,19 @@ import React from 'react';
 import { TrafficSourceItem } from './TrafficSourceItem';
 import { useTrafficSources } from '../../hooks/useTrafficSources';
 import { TRAFFIC_SOURCES } from '../../config/traffic-sources.config';
+import { useSite } from '../../contexts/SiteContext';
 
 export const TrafficSourcesList: React.FC = () => {
+  const { selectedSite } = useSite();
   const { data, isLoading, error } = useTrafficSources();
+
+  if (!selectedSite) {
+    return (
+      <div className="bg-[#25262b]/90 backdrop-blur-sm rounded-lg p-4">
+        <div className="text-gray-400">Veuillez sélectionner un site</div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

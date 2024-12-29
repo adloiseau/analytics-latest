@@ -5,7 +5,7 @@ import { KeywordsTable } from '../components/keywords/KeywordsTable';
 import { KeywordsChart } from '../components/keywords/KeywordsChart';
 import { SelectedItemProvider } from '../contexts/SelectedItemContext';
 
-export const Keywords = () => {
+export const Keywords: React.FC = () => {
   return (
     <Layout>
       <SelectedItemProvider>

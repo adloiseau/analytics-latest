@@ -2,15 +2,14 @@ import React, { useState } from 'react';
 import { ChevronDown, Globe } from 'lucide-react';
 import { useSearchConsoleSites } from '../hooks/useSearchConsoleSites';
 import { useSite } from '../contexts/SiteContext';
-import type { Site } from '../hooks/useSearchConsoleSites';
 
 export const SiteSelector: React.FC = () => {
-  const { sites, loading, error } = useSearchConsoleSites();
+  const { data: sites = [], isLoading: loading, error } = useSearchConsoleSites();
   const [isOpen, setIsOpen] = useState(false);
   const { selectedSite, setSelectedSite } = useSite();
 
-  const handleSiteSelect = (site: Site) => {
-    setSelectedSite(site.siteUrl);
+  const handleSiteSelect = (siteUrl: string) => {
+    setSelectedSite(siteUrl);
     setIsOpen(false);
   };
 
@@ -28,7 +27,7 @@ export const SiteSelector: React.FC = () => {
   if (error) {
     return (
       <div className="flex items-center bg-[#25262b] rounded-lg px-4 py-2.5 text-red-400 text-sm shadow-lg border border-gray-800/50">
-        <span>{error}</span>
+        <span>Erreur de chargement</span>
       </div>
     );
   }
@@ -52,7 +51,7 @@ export const SiteSelector: React.FC = () => {
                               ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {isOpen && (
+      {isOpen && sites.length > 0 && (
         <>
           <div 
             className="fixed inset-0 z-40" 
@@ -60,24 +59,20 @@ export const SiteSelector: React.FC = () => {
           />
           <div className="absolute top-full left-0 mt-2 w-full bg-[#25262b] rounded-lg 
                         shadow-xl border border-gray-800/50 py-1 z-50">
-            {sites.length === 0 ? (
-              <div className="px-4 py-3 text-sm text-gray-400">Aucun site trouvé</div>
-            ) : (
-              sites.map((site) => (
-                <button
-                  key={site.siteUrl}
-                  onClick={() => handleSiteSelect(site)}
-                  className="w-full text-left px-4 py-2.5 text-sm text-gray-300 
+            {sites.map((site) => (
+              <button
+                key={site.siteUrl}
+                onClick={() => handleSiteSelect(site.siteUrl)}
+                className="w-full text-left px-4 py-2.5 text-sm text-gray-300 
                            hover:bg-[#2d2e33] transition-colors flex items-center space-x-3
                            group"
-                >
-                  <Globe className="w-4 h-4 text-gray-400 group-hover:text-gray-300 flex-shrink-0" />
-                  <span className="truncate group-hover:text-white">
-                    {new URL(site.siteUrl).hostname}
-                  </span>
-                </button>
-              ))
-            )}
+              >
+                <Globe className="w-4 h-4 text-gray-400 group-hover:text-gray-300 flex-shrink-0" />
+                <span className="truncate group-hover:text-white">
+                  {new URL(site.siteUrl).hostname}
+                </span>
+              </button>
+            ))}
           </div>
         </>
       )}

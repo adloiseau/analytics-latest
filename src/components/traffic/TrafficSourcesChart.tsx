@@ -8,10 +8,22 @@ import { useTrafficSources } from '../../hooks/useTrafficSources';
 import { useTrafficSource } from '../../contexts/TrafficSourceContext';
 import { TRAFFIC_SOURCES } from '../../config/traffic-sources.config';
 import { formatMetric } from '../../utils/metrics';
+import { useSite } from '../../contexts/SiteContext';
 
 export const TrafficSourcesChart: React.FC = () => {
+  const { selectedSite } = useSite();
   const { data, isLoading, error } = useTrafficSources();
   const { selectedSource } = useTrafficSource();
+
+  if (!selectedSite) {
+    return (
+      <ChartContainer title="Évolution du Trafic par Source">
+        <div className="h-[400px] w-full flex items-center justify-center text-gray-400">
+          Veuillez sélectionner un site
+        </div>
+      </ChartContainer>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -35,7 +47,7 @@ export const TrafficSourcesChart: React.FC = () => {
     return (
       <ChartContainer title="Évolution du Trafic par Source">
         <div className="h-[400px] w-full flex items-center justify-center text-gray-400">
-          Aucune donnée disponible pour les sources sélectionnées
+          Aucune donnée disponible
         </div>
       </ChartContainer>
     );
