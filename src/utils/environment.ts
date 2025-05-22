@@ -17,7 +17,7 @@ export const getBaseUrl = (): string => {
  * Get the full redirect URI for OAuth
  */
 export const getRedirectUri = (): string => {
-  return `${getBaseUrl()}/auth/callback`;
+  return import.meta.env.VITE_REDIRECT_URI;
 };
 
 /**
@@ -28,7 +28,8 @@ export const validateEnvVariables = () => {
     'VITE_SUPABASE_URL',
     'VITE_SUPABASE_ANON_KEY',
     'VITE_GOOGLE_CLIENT_ID',
-    'VITE_OAUTH_SCOPES'
+    'VITE_OAUTH_SCOPES',
+    'VITE_REDIRECT_URI'
   ];
 
   const missing = required.filter(key => !import.meta.env[key]);

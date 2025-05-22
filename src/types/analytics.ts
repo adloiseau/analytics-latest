@@ -11,3 +11,7 @@ export interface AnalyticsMetrics {
 }
 
 export interface RealTimeMetrics extends AnalyticsMetrics {}
+
+export interface GA_PROPERTY_IDS {
+  [hostname: string]: string;
+}

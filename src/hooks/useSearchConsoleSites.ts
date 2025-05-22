@@ -13,20 +13,16 @@ export const useSearchConsoleSites = () => {
   return useQuery<Site[]>(
     'sites',
     async () => {
-      if (!accessToken) {
-        console.error('No access token available');
-        throw new Error('No access token');
+      if (!accessToken || !isAuthenticated) {
+        return [];
       }
       const response = await searchConsoleApi.fetchSites(accessToken);
       return response.siteEntry || [];
     },
     {
-      enabled: !!accessToken && isAuthenticated && isInitialized,
+      enabled: isInitialized && isAuthenticated && !!accessToken,
       staleTime: 5 * 60 * 1000,
-      retry: 1,
-      onError: (error) => {
-        console.error('Error fetching sites:', error);
-      }
+      retry: false
     }
   );
 };

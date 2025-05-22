@@ -8,6 +8,7 @@ import { SelectedItemProvider } from './contexts/SelectedItemContext';
 import { PrivateRoute } from './components/auth/PrivateRoute';
 import { LoginForm } from './components/auth/LoginForm';
 import { Dashboard } from './pages/Dashboard';
+import { Details } from './pages/Details';
 import { Top } from './pages/Top';
 import { Keywords } from './pages/Keywords';
 import { TrafficBySource } from './pages/TrafficBySource';
@@ -29,6 +30,14 @@ function App() {
                   element={
                     <PrivateRoute>
                       <Dashboard />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/details"
+                  element={
+                    <PrivateRoute>
+                      <Details />
                     </PrivateRoute>
                   }
                 />

@@ -10,7 +10,7 @@ export const Keywords: React.FC = () => {
     <Layout>
       <SelectedItemProvider>
         <div className="space-y-4">
-          <div className="w-full max-w-xs">
+          <div className="w-full max-w-[300px]">
             <SiteSelector />
           </div>
           <KeywordsChart />

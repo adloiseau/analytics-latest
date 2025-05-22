@@ -10,7 +10,7 @@ export const TrafficBySource: React.FC = () => {
     <Layout>
       <TrafficSourceProvider>
         <div className="space-y-4">
-          <div className="w-full max-w-xs">
+          <div className="w-full max-w-[300px]">
             <SiteSelector />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">

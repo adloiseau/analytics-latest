@@ -6,9 +6,10 @@ import { searchConsoleApi } from '../services/googleAuth/api';
 import { getDateRange } from '../utils/dates';
 import { filterData, deduplicateTableData, prepareChartData } from '../utils/metrics';
 import { REFRESH_CONFIG } from '../config/refresh';
+import { isAuthorizedSite } from '../config/analytics.config';
 import type { SearchAnalyticsRow } from '../services/googleAuth/types';
 
-type Dimension = 'page' | 'query' | 'site';
+type Dimension = 'page' | 'query' | 'site' | 'country';
 
 export function useSearchConsoleData(
   dimension: Dimension,
@@ -27,23 +28,24 @@ export function useSearchConsoleData(
   return useQuery(
     ['searchConsole', dimension, selectedSite, startDate, endDate, searchQuery, filterValue],
     async () => {
-      if (!accessToken) {
-        throw new Error('No access token');
+      if (!isAuthenticated || !accessToken) {
+        return { rows: [], chartData: [] };
       }
 
       if (dimension === 'site') {
         const { siteEntry: sites } = await searchConsoleApi.fetchSites(accessToken);
         if (!sites?.length) return { rows: [], chartData: [] };
 
+        const authorizedSites = sites.filter(site => isAuthorizedSite(site.siteUrl));
+
         const allSitesData = await Promise.all(
-          sites.map(async (site) => {
+          authorizedSites.map(async (site) => {
             try {
               const response = await searchConsoleApi.fetchSearchAnalytics(accessToken, site.siteUrl, {
                 startDate,
                 endDate,
                 dimensions: [],
-                rowLimit: 1,
-                dimensionFilterGroups: []
+                rowLimit: 1
               });
 
               return {
@@ -55,8 +57,7 @@ export function useSearchConsoleData(
                 },
                 keys: [site.siteUrl]
               };
-            } catch (error) {
-              console.error(`Error fetching data for ${site.siteUrl}:`, error);
+            } catch {
               return {
                 keys: [site.siteUrl],
                 clicks: 0,
@@ -74,53 +75,50 @@ export function useSearchConsoleData(
         };
       }
 
-      if (!selectedSite) {
-        throw new Error('No site selected');
+      if (!selectedSite || !isAuthorizedSite(selectedSite)) {
+        return { rows: [], chartData: [] };
       }
 
-      const [dimensionResponse, timeResponse] = await Promise.all([
-        searchConsoleApi.fetchSearchAnalytics(accessToken, selectedSite, {
-          startDate,
-          endDate,
-          dimensions: [dimension],
-          rowLimit: 1000,
-          dimensionFilterGroups: filterValue ? [{
-            filters: [{
-              dimension,
-              operator: 'equals',
-              expression: filterValue
-            }]
-          }] : []
-        }),
-        searchConsoleApi.fetchSearchAnalytics(accessToken, selectedSite, {
-          startDate,
-          endDate,
-          dimensions: ['date'],
-          rowLimit: 1000,
-          dimensionFilterGroups: []
-        })
-      ]);
+      try {
+        const [dimensionResponse, timeResponse] = await Promise.all([
+          searchConsoleApi.fetchSearchAnalytics(accessToken, selectedSite, {
+            startDate,
+            endDate,
+            dimensions: [dimension],
+            rowLimit: 1000,
+            dimensionFilterGroups: filterValue ? [{
+              filters: [{
+                dimension,
+                operator: 'equals',
+                expression: filterValue
+              }]
+            }] : []
+          }),
+          searchConsoleApi.fetchSearchAnalytics(accessToken, selectedSite, {
+            startDate,
+            endDate,
+            dimensions: ['date'],
+            rowLimit: 1000
+          })
+        ]);
 
-      const rows = dimensionResponse.rows || [];
-      const timeRows = timeResponse.rows || [];
+        const rows = dimensionResponse.rows || [];
+        const timeRows = timeResponse.rows || [];
 
-      const filteredRows = filterData(rows, searchQuery);
-      const deduplicatedRows = deduplicateTableData(filteredRows);
-      const chartData = prepareChartData(timeRows);
+        const filteredRows = filterData(rows, searchQuery);
+        const deduplicatedRows = deduplicateTableData(filteredRows);
+        const chartData = prepareChartData(timeRows);
 
-      return { 
-        rows: deduplicatedRows,
-        chartData
-      };
+        return { rows: deduplicatedRows, chartData };
+      } catch {
+        return { rows: [], chartData: [] };
+      }
     },
     {
-      enabled: !!accessToken && isAuthenticated && isInitialized && (dimension === 'site' || !!selectedSite),
+      enabled: isInitialized && isAuthenticated && !!accessToken,
       staleTime: REFRESH_CONFIG.GSC_REFRESH_INTERVAL,
       keepPreviousData: true,
-      retry: 1,
-      onError: (error) => {
-        console.error(`Error fetching ${dimension} data:`, error);
-      }
+      retry: false
     }
   );
 }

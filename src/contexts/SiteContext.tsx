@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useSearchConsoleSites } from '../hooks/useSearchConsoleSites';
+import { GA_PROPERTY_IDS } from '../config/analytics.config';
 
 interface SiteContextType {
   selectedSite: string | null;
@@ -9,19 +9,25 @@ interface SiteContextType {
 const SiteContext = createContext<SiteContextType | null>(null);
 
 export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { data: sites, isLoading } = useSearchConsoleSites();
   const [selectedSite, setSelectedSite] = useState<string | null>(() => {
-    return localStorage.getItem('selectedSite');
+    const stored = localStorage.getItem('selectedSite');
+    if (stored && Object.keys(GA_PROPERTY_IDS).some(hostname => stored.includes(hostname))) {
+      return stored;
+    }
+    return null;
   });
 
-  // Set default site when sites are loaded and no site is selected
+  // Set default site when no site is selected
   useEffect(() => {
-    if (!isLoading && sites?.length > 0 && !selectedSite) {
-      const defaultSite = sites[0].siteUrl;
-      localStorage.setItem('selectedSite', defaultSite);
-      setSelectedSite(defaultSite);
+    if (!selectedSite) {
+      const firstHostname = Object.keys(GA_PROPERTY_IDS)[0];
+      if (firstHostname) {
+        const defaultSite = `https://${firstHostname}`;
+        localStorage.setItem('selectedSite', defaultSite);
+        setSelectedSite(defaultSite);
+      }
     }
-  }, [isLoading, sites, selectedSite]);
+  }, [selectedSite]);
 
   const handleSiteChange = (site: string) => {
     localStorage.setItem('selectedSite', site);

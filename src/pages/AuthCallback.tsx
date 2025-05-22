@@ -1,15 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { googleAuthClient } from '../services/googleAuth/client';
 import { useQueryClient } from 'react-query';
 import { storage } from '../utils/storage';
 import { STORAGE_KEYS } from '../config/storage.config';
+import { useAuth } from '../contexts/AuthContext';
 
 export const AuthCallback: React.FC = () => {
-  const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     const handleAuth = async () => {
@@ -22,8 +23,7 @@ export const AuthCallback: React.FC = () => {
         console.log('[AuthCallback] Auth params:', { 
           hasCode: !!code, 
           hasState: !!state,
-          statesMatch: state === storedState,
-          currentPath: window.location.pathname
+          statesMatch: state === storedState
         });
         
         if (!code) {
@@ -39,30 +39,38 @@ export const AuthCallback: React.FC = () => {
         console.log('[AuthCallback] Auth callback handled successfully');
         
         // Prefetch initial data
-        await queryClient.prefetchQuery('sites');
-        await queryClient.prefetchQuery(['searchConsole', 'site']);
+        await Promise.all([
+          queryClient.prefetchQuery('sites'),
+          queryClient.prefetchQuery(['searchConsole', 'site'])
+        ]);
+
+        // Clear auth state and redirect
+        storage.remove('is_authenticating');
+        storage.remove(STORAGE_KEYS.AUTH_STATE);
         
-        navigate('/');
+        // Force a full page reload to ensure all auth states are properly updated
+        window.location.href = '/';
       } catch (error) {
         console.error('[AuthCallback] Error:', error);
-        setError(error instanceof Error ? error.message : 'Authentication failed');
+        storage.remove('is_authenticating');
+        storage.remove(STORAGE_KEYS.AUTH_STATE);
+        navigate('/login', { replace: true });
       }
     };
 
-    handleAuth();
-  }, [navigate, searchParams, queryClient]);
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-[#141517] flex items-center justify-center">
-        <div className="text-red-500">{error}</div>
-      </div>
-    );
-  }
+    if (!isAuthenticated) {
+      handleAuth();
+    } else {
+      navigate('/', { replace: true });
+    }
+  }, [navigate, searchParams, queryClient, isAuthenticated]);
 
   return (
     <div className="min-h-screen bg-[#141517] flex items-center justify-center">
-      <div className="text-white">Authentification en cours...</div>
+      <div className="flex items-center gap-3 text-gray-400">
+        <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
+        <span>Authentification en cours...</span>
+      </div>
     </div>
   );
 };
