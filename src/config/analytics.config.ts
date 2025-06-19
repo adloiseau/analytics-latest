@@ -13,10 +13,30 @@ export const parseGAProperties = (): GA_PROPERTY_IDS => {
       throw new Error('VITE_GA_PROPERTIES must be an array');
     }
 
-    return properties.reduce((acc, site) => ({
-      ...acc,
-      [site.url]: site.propertyId
-    }), {});
+    const result = properties.reduce((acc, site) => {
+      // Extraire le hostname de l'URL
+      try {
+        // Ajouter https:// si ce n'est pas déjà présent
+        let url = site.url;
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+          url = `https://${url}`;
+        }
+        
+        const hostname = new URL(url).hostname;
+        return {
+          ...acc,
+          [hostname]: site.propertyId
+        };
+      } catch (error) {
+        console.warn(`Invalid URL in GA_PROPERTIES: ${site.url}`);
+        return acc;
+      }
+    }, {});
+
+    console.log('Parsed GA Properties:', result);
+    console.log('Total sites loaded:', Object.keys(result).length);
+    
+    return result;
   } catch (error) {
     console.error('Error parsing GA properties:', error);
     return {};
@@ -33,4 +53,9 @@ export const isAuthorizedSite = (url: string): boolean => {
   } catch {
     return false;
   }
+};
+
+// Helper to get all authorized site URLs
+export const getAllAuthorizedSites = (): string[] => {
+  return Object.keys(GA_PROPERTY_IDS).map(hostname => `https://${hostname}`);
 };
