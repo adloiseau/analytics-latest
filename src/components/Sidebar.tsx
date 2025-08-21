@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Star, KeyRound, BarChart2, Globe2, X, LayoutDashboard, ClipboardList, DollarSign } from 'lucide-react';
+import { Star, KeyRound, BarChart2, X, LayoutDashboard, ClipboardList, DollarSign } from 'lucide-react';
+import { Activity } from 'lucide-react';
 import { NavItem } from './layout/navigation/NavItem';
 
 interface SidebarProps {
@@ -35,8 +36,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { to: '/top', icon: Star, label: 'Top' },
     { to: '/keywords', icon: KeyRound, label: 'Keywords' },
     { to: '/traffic-sources', icon: BarChart2, label: 'Trafic par Source' },
-    { to: '/expired-domains', icon: Globe2, label: 'Domaines expirés' },
-    { to: '/link-selling', icon: DollarSign, label: 'Link Selling' }
+    { to: '/link-selling', icon: DollarSign, label: 'Link Selling' },
+    { to: '/fake-traffic', icon: Activity, label: 'Fake Traffic' }
   ];
 
   return (

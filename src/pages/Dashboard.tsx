@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchConsoleData } from '../hooks/useSearchConsoleData';
 import { useLastMetricUpdate } from '../hooks/useLastMetricUpdate';
 import { useGAPropertiesMap } from '../hooks/useGAProperties';
@@ -216,7 +216,7 @@ const SitesGridWithMetrics = ({ sites, isLoading, error, totalSites, onMetricsCl
   };
 
   // Vérifier si toutes les métriques sont chargées
-  React.useEffect(() => {
+  useEffect(() => {
     const loadedCount = sitesWithMetrics.filter(s => s.isLoaded).length;
     const totalCount = sites.length;
     
@@ -226,7 +226,7 @@ const SitesGridWithMetrics = ({ sites, isLoading, error, totalSites, onMetricsCl
   }, [sitesWithMetrics, sites.length]);
 
   // Trier par TO décroissant une fois que toutes les métriques sont chargées
-  const sortedSites = React.useMemo(() => {
+  const sortedSites = useMemo(() => {
     if (!metricsLoaded || sitesWithMetrics.length === 0) {
       return [];
     }
@@ -305,7 +305,7 @@ export const Dashboard = () => {
   const { data: currentData, isLoading, error } = useSearchConsoleData('site');
 
   // Créer une liste complète des sites avec leurs métriques TO
-  const allSitesWithMetrics = React.useMemo(() => {
+  const allSitesWithMetrics = useMemo(() => {
     if (!gaPropertiesMap) return [];
     
     const sitesMap = new Map();

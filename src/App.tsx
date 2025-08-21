@@ -12,8 +12,8 @@ import { Details } from './pages/Details';
 import { Top } from './pages/Top';
 import { Keywords } from './pages/Keywords';
 import { TrafficBySource } from './pages/TrafficBySource';
-import { ExpiredDomains } from './pages/ExpiredDomains';
 import { LinkSelling } from './pages/LinkSelling';
+import { FakeTraffic } from './pages/FakeTraffic';
 import { AuthCallback } from './pages/AuthCallback';
 
 function App() {
@@ -67,18 +67,18 @@ function App() {
                   }
                 />
                 <Route
-                  path="/expired-domains"
-                  element={
-                    <PrivateRoute>
-                      <ExpiredDomains />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
                   path="/link-selling"
                   element={
                     <PrivateRoute>
                       <LinkSelling />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/fake-traffic"
+                  element={
+                    <PrivateRoute>
+                      <FakeTraffic />
                     </PrivateRoute>
                   }
                 />

@@ -1,5 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
+import { useSmartPopupPosition } from '../../hooks/useSmartPopupPosition';
 import { useQuery } from 'react-query';
 import { metricsService } from '../../services/supabase/metrics';
 import { METRIC_DEFINITIONS } from '../../types/metrics';
@@ -26,6 +27,30 @@ export const SiteMetricsDetailPopup: React.FC<SiteMetricsDetailPopupProps> = ({
   onClose
 }) => {
   const popupRef = React.useRef<HTMLDivElement>(null);
+  const [triggerElement, setTriggerElement] = React.useState<HTMLElement | null>(null);
+  
+  // Récupérer l'élément déclencheur depuis le DOM
+  React.useEffect(() => {
+    // Chercher le bouton qui a déclenché cette popup
+    const buttons = document.querySelectorAll('[title="Métriques du site"]');
+    const hostname = new URL(siteUrl).hostname;
+    
+    // Trouver le bouton correspondant au site
+    for (const button of buttons) {
+      const card = button.closest('[class*="rounded-xl"]');
+      if (card && card.textContent?.includes(hostname)) {
+        setTriggerElement(button as HTMLElement);
+        break;
+      }
+    }
+  }, [siteUrl]);
+
+  const position = useSmartPopupPosition({
+    triggerElement,
+    popupHeight: 600,
+    popupWidth: 1200,
+    offset: 20
+  });
 
   // Gestionnaire pour fermer la popup en cliquant en dehors
   React.useEffect(() => {
@@ -172,11 +197,15 @@ export const SiteMetricsDetailPopup: React.FC<SiteMetricsDetailPopupProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50">
       <div 
         ref={popupRef}
-        className="bg-[#1a1b1e] rounded-xl p-6 w-full max-w-7xl relative 
-                   max-h-[90vh] overflow-y-auto border border-gray-800/50"
+        className="fixed bg-[#1a1b1e] rounded-xl p-6 w-[90vw] max-w-7xl relative 
+                   overflow-y-auto border border-gray-800/50 shadow-2xl"
+        style={{
+          ...position,
+          minWidth: '320px'
+        }}
       >
         
         {/* Header */}

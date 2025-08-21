@@ -1,5 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
+import { useSmartPopupPosition } from '../hooks/useSmartPopupPosition';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { format, parseISO, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -16,6 +17,14 @@ interface PositionHistoryPopupProps {
 }
 
 export const PositionHistoryPopup: React.FC<PositionHistoryPopupProps> = ({ item, dimension, onClose }) => {
+  const popupRef = React.useRef<HTMLDivElement>(null);
+  
+  const position = useSmartPopupPosition({
+    triggerElement: null,
+    popupHeight: 500,
+    popupWidth: 900,
+    offset: 20
+  });
   const { dateRange, setDateRange } = useFilters();
   const { startDate, endDate } = getDateRange(dateRange);
 
@@ -66,8 +75,15 @@ export const PositionHistoryPopup: React.FC<PositionHistoryPopupProps> = ({ item
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-[#25262b] rounded-lg p-6 max-w-4xl w-full mx-4 relative">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50">
+      <div 
+        ref={popupRef}
+        className="fixed bg-[#25262b] rounded-lg p-6 w-[90vw] max-w-4xl relative shadow-2xl"
+        style={{
+          ...position,
+          minWidth: '320px'
+        }}
+      >
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-1 rounded-lg hover:bg-[#1a1b1e] text-gray-400 hover:text-white"

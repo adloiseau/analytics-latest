@@ -1,5 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
+import { useSmartPopupPosition } from '../../hooks/useSmartPopupPosition';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { format, parseISO, subDays, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -26,6 +27,29 @@ export const MetricHistoryPopup: React.FC<MetricHistoryPopupProps> = ({
   metricDefinition,
   onClose
 }) => {
+  const popupRef = React.useRef<HTMLDivElement>(null);
+  const [triggerElement, setTriggerElement] = React.useState<HTMLElement | null>(null);
+  
+  // Récupérer l'élément déclencheur depuis le DOM
+  React.useEffect(() => {
+    const hostname = new URL(siteUrl).hostname;
+    const cards = document.querySelectorAll('[class*="rounded-xl"]');
+    
+    for (const card of cards) {
+      if (card.textContent?.includes(hostname)) {
+        setTriggerElement(card as HTMLElement);
+        break;
+      }
+    }
+  }, [siteUrl]);
+
+  const position = useSmartPopupPosition({
+    triggerElement,
+    popupHeight: 500,
+    popupWidth: 900,
+    offset: 20
+  });
+
   const { accessToken } = useAuth();
   const { dateRange, setDateRange } = useFilters();
   const { startDate, endDate } = getDateRange(dateRange);
@@ -144,8 +168,15 @@ export const MetricHistoryPopup: React.FC<MetricHistoryPopupProps> = ({
   }, [currentPeriod, previousPeriod]);
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-      <div className="bg-[#25262b] rounded-lg p-6 w-[90vw] max-w-4xl relative">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60]">
+      <div 
+        ref={popupRef}
+        className="fixed bg-[#25262b] rounded-lg p-6 w-[90vw] max-w-4xl relative shadow-2xl"
+        style={{
+          ...position,
+          minWidth: '320px'
+        }}
+      >
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-1 rounded-lg hover:bg-[#1a1b1e] text-gray-400 hover:text-white"
