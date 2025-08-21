@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { analyticsApi } from '../services/googleAnalytics/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useFilters } from '../contexts/FilterContext';
-import { GA_PROPERTY_IDS, isAuthorizedSite } from '../config/analytics.config';
+import { useGAPropertiesMap } from './useGAProperties';
 import { REFRESH_CONFIG } from '../config/refresh';
 import { getDateRange } from '../utils/dates';
 import type { RealTimeMetrics } from '../types/analytics';
@@ -13,23 +13,17 @@ export function useGoogleAnalytics(websiteUrl: string) {
   const [error, setError] = useState<string | null>(null);
   const { accessToken, isAuthenticated } = useAuth();
   const { dateRange } = useFilters();
+  const { data: gaPropertiesMap } = useGAPropertiesMap();
 
   const fetchData = useCallback(async () => {
-    if (!isAuthenticated || !accessToken || !websiteUrl) {
+    if (!isAuthenticated || !accessToken || !websiteUrl || !gaPropertiesMap) {
       setLoading(false);
       return;
     }
 
     try {
-      // Check if site is authorized
-      if (!isAuthorizedSite(websiteUrl)) {
-        setMetrics(null);
-        setLoading(false);
-        return;
-      }
-
       const hostname = new URL(websiteUrl).hostname;
-      const propertyId = GA_PROPERTY_IDS[hostname];
+      const propertyId = gaPropertiesMap[hostname];
       
       if (!propertyId) {
         setMetrics(null);
@@ -51,17 +45,20 @@ export function useGoogleAnalytics(websiteUrl: string) {
     } finally {
       setLoading(false);
     }
-  }, [websiteUrl, accessToken, isAuthenticated, dateRange]);
+  }, [websiteUrl, accessToken, isAuthenticated, dateRange, gaPropertiesMap]);
 
   useEffect(() => {
     fetchData();
 
     // Set up refresh interval for real-time data
-    if (isAuthenticated && websiteUrl && isAuthorizedSite(websiteUrl)) {
-      const interval = setInterval(fetchData, REFRESH_CONFIG.GA_REALTIME_REFRESH_INTERVAL);
-      return () => clearInterval(interval);
+    if (isAuthenticated && websiteUrl && gaPropertiesMap) {
+      const hostname = new URL(websiteUrl).hostname;
+      if (gaPropertiesMap[hostname]) {
+        const interval = setInterval(fetchData, REFRESH_CONFIG.GA_REALTIME_REFRESH_INTERVAL);
+        return () => clearInterval(interval);
+      }
     }
-  }, [fetchData, isAuthenticated, websiteUrl]);
+  }, [fetchData, isAuthenticated, websiteUrl, gaPropertiesMap]);
 
   return { metrics, loading, error };
 }

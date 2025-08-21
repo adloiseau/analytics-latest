@@ -30,11 +30,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const token = storage.get(STORAGE_KEYS.ACCESS_TOKEN);
-        const isAuthenticating = storage.get('is_authenticating');
-        const isCallback = window.location.pathname === '/auth/callback';
-
+        // Only initialize Google Auth if Firebase user is authenticated and authorized
         if (currentUser && isAuthorized) {
+          const token = storage.get(STORAGE_KEYS.ACCESS_TOKEN);
+          const isAuthenticating = storage.get('is_authenticating');
+          const isCallback = window.location.pathname === '/auth/callback';
+
+          // Check if we have a valid token
           if (token) {
             setAuthState({
               isAuthenticated: true,
@@ -42,12 +44,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               isInitialized: true
             });
 
+            // Prefetch data if authenticated
             await queryClient.prefetchQuery('sites');
-          } else if (!isAuthenticating && !isCallback) {
-            storage.set('is_authenticating', 'true');
-            googleAuthClient.login();
+          } else {
+            setAuthState({
+              isAuthenticated: false,
+              accessToken: null,
+              isInitialized: true
+            });
           }
         } else {
+          // Clear any existing Google tokens if Firebase auth fails
           storage.remove(STORAGE_KEYS.ACCESS_TOKEN);
           storage.remove(STORAGE_KEYS.REFRESH_TOKEN);
           storage.remove('is_authenticating');
@@ -67,7 +74,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [currentUser, isAuthorized, queryClient]);
 
   const login = () => {
-    googleAuthClient.login();
+    // Only allow Google Auth login if Firebase user is authenticated
+    if (currentUser && isAuthorized) {
+      storage.set('is_authenticating', 'true');
+      googleAuthClient.login();
+    }
   };
 
   const logout = () => {

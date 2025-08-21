@@ -28,7 +28,14 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+
+// Create a separate Google provider for Firebase authentication
+// This is different from the Google APIs OAuth
 const googleProvider = new GoogleAuthProvider();
+
+// Configure the provider for Firebase authentication only
+googleProvider.addScope('email');
+googleProvider.addScope('profile');
 
 // Set persistence to LOCAL to keep the user logged in
 setPersistence(auth, browserLocalPersistence);

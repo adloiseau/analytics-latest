@@ -51,13 +51,11 @@ export const metricsService = {
         .single();
 
       if (error) {
-        console.error('Supabase error for getLatestMetrics:', error);
         return null;
       }
 
       return data;
     } catch (error) {
-      console.error('Error in getLatestMetrics:', error);
       return null;
     }
   },
@@ -70,8 +68,6 @@ export const metricsService = {
     try {
       const normalizedUrl = normalizeUrl(siteUrl);
       
-      console.log(`Fetching metrics for: ${normalizedUrl}, type: ${metricType}, days: ${days}`);
-      
       const { data, error } = await supabaseClient
         .from('site_metrics')
         .select('*')
@@ -81,14 +77,11 @@ export const metricsService = {
         .limit(days);
 
       if (error) {
-        console.error('Supabase error for getMetricsHistory:', error);
         return [];
       }
 
-      console.log(`Found ${data?.length || 0} metrics for ${normalizedUrl}`);
       return data || [];
     } catch (error) {
-      console.error('Error in getMetricsHistory:', error);
       return [];
     }
   },
@@ -110,13 +103,11 @@ export const metricsService = {
         .single();
 
       if (error) {
-        console.error('Supabase error for getMetricsByDate:', error);
         return null;
       }
 
       return data;
     } catch (error) {
-      console.error('Error in getMetricsByDate:', error);
       return null;
     }
   }

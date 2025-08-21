@@ -1,33 +1,48 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { GA_PROPERTY_IDS } from '../config/analytics.config';
+import { useGAPropertiesMap } from '../hooks/useGAProperties';
 
 interface SiteContextType {
   selectedSite: string | null;
   setSelectedSite: (site: string) => void;
+  availableSites: string[];
+  isLoading: boolean;
 }
 
 const SiteContext = createContext<SiteContextType | null>(null);
 
 export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [selectedSite, setSelectedSite] = useState<string | null>(() => {
-    const stored = localStorage.getItem('selectedSite');
-    if (stored && Object.keys(GA_PROPERTY_IDS).some(hostname => stored.includes(hostname))) {
-      return stored;
-    }
-    return null;
+    return localStorage.getItem('selectedSite');
   });
 
-  // Set default site when no site is selected
+  const { data: gaPropertiesMap, isLoading } = useGAPropertiesMap();
+
+  // Get available sites from database
+  const availableSites = React.useMemo(() => {
+    if (!gaPropertiesMap) return [];
+    return Object.keys(gaPropertiesMap).map(hostname => `https://${hostname}`);
+  }, [gaPropertiesMap]);
+
+  // Set default site when properties are loaded and no site is selected
   useEffect(() => {
-    if (!selectedSite) {
-      const firstHostname = Object.keys(GA_PROPERTY_IDS)[0];
-      if (firstHostname) {
-        const defaultSite = `https://${firstHostname}`;
+    if (!isLoading && availableSites.length > 0 && !selectedSite) {
+      const defaultSite = availableSites[0];
+      localStorage.setItem('selectedSite', defaultSite);
+      setSelectedSite(defaultSite);
+    }
+  }, [availableSites, selectedSite, isLoading]);
+
+  // Validate selected site against available sites
+  useEffect(() => {
+    if (!isLoading && selectedSite && availableSites.length > 0) {
+      const isValidSite = availableSites.some(site => site === selectedSite);
+      if (!isValidSite) {
+        const defaultSite = availableSites[0];
         localStorage.setItem('selectedSite', defaultSite);
         setSelectedSite(defaultSite);
       }
     }
-  }, [selectedSite]);
+  }, [selectedSite, availableSites, isLoading]);
 
   const handleSiteChange = (site: string) => {
     localStorage.setItem('selectedSite', site);
@@ -35,7 +50,12 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <SiteContext.Provider value={{ selectedSite, setSelectedSite: handleSiteChange }}>
+    <SiteContext.Provider value={{ 
+      selectedSite, 
+      setSelectedSite: handleSiteChange,
+      availableSites,
+      isLoading
+    }}>
       {children}
     </SiteContext.Provider>
   );

@@ -35,6 +35,7 @@ class GoogleAuthClientService {
     storage.set(STORAGE_KEYS.AUTH_STATE, state);
     storage.set('is_authenticating', 'true');
 
+    // Use different scopes and parameters for Google APIs (not Firebase)
     const params = new URLSearchParams({
       client_id: this.config.clientId,
       redirect_uri: this.config.redirectUri,
@@ -43,7 +44,9 @@ class GoogleAuthClientService {
       prompt: 'consent',
       state,
       scope: this.config.scopes.join(' '),
-      include_granted_scopes: 'true'
+      include_granted_scopes: 'true',
+      // Add parameter to differentiate from Firebase auth
+      login_hint: 'google_apis_only'
     });
 
     const authUrl = `${this.config.authEndpoint}?${params.toString()}`;
@@ -68,11 +71,12 @@ class GoogleAuthClientService {
 
       if (!tokenResponse.ok) {
         const error = await tokenResponse.json();
-        throw new Error(error.error_description || 'Failed to get tokens');
+        throw new Error(error.error_description || 'Failed to get Google APIs tokens');
       }
 
       const tokens = await tokenResponse.json();
 
+      // Store Google APIs tokens (separate from Firebase)
       storage.set(STORAGE_KEYS.ACCESS_TOKEN, tokens.access_token);
       if (tokens.refresh_token) {
         storage.set(STORAGE_KEYS.REFRESH_TOKEN, tokens.refresh_token);
@@ -120,7 +124,6 @@ class GoogleAuthClientService {
       }
     } catch (error) {
       this.cleanup();
-      throw error;
     }
   }
 
@@ -138,7 +141,9 @@ class GoogleAuthClientService {
   logout(): void {
     this.cleanup();
     if (this.queryClient) {
-      this.queryClient.clear();
+      // Only invalidate Google APIs related queries
+      this.queryClient.invalidateQueries('sites');
+      this.queryClient.invalidateQueries('searchConsole');
     }
   }
 }

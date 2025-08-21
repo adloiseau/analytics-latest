@@ -3,7 +3,6 @@ import { useQuery } from 'react-query';
 import { useMetrics } from '../../hooks/useMetrics';
 import { useGoogleAnalytics } from '../../hooks/useGoogleAnalytics';
 import { validateUrl } from '../../utils/metrics';
-import { SiteMetricsPopup } from './SiteMetricsPopup';
 import { MetricHistoryPopup } from './MetricHistoryPopup';
 import { AnalyticsHistoryPopup } from './AnalyticsHistoryPopup';
 import { METRIC_DEFINITIONS } from '../../types/metrics';
@@ -17,7 +16,6 @@ interface SiteMetricsRowProps {
 }
 
 export const SiteMetricsRow: React.FC<SiteMetricsRowProps> = ({ site, previousPeriodData }) => {
-  const [showMetricsPopup, setShowMetricsPopup] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
   const { metrics } = useGoogleAnalytics(site.keys[0]);
   const { data: siteMetrics } = useMetrics(site.keys[0]);
@@ -44,7 +42,7 @@ export const SiteMetricsRow: React.FC<SiteMetricsRowProps> = ({ site, previousPe
           favicon={favicon}
           position={site.position}
           ctr={site.ctr}
-          onShowMetrics={() => setShowMetricsPopup(true)}
+          onShowMetrics={() => {}}
         />
 
         <MetricsGrid
@@ -55,15 +53,6 @@ export const SiteMetricsRow: React.FC<SiteMetricsRowProps> = ({ site, previousPe
           onMetricClick={handleMetricClick}
         />
       </div>
-
-      {showMetricsPopup && (
-        <SiteMetricsPopup
-          site={site}
-          siteMetrics={siteMetrics}
-          analyticsMetrics={metrics}
-          onClose={() => setShowMetricsPopup(false)}
-        />
-      )}
 
       {selectedMetric && ['pageViews', 'activeUsers', 'realtimeUsers'].includes(selectedMetric) && metrics && (
         <AnalyticsHistoryPopup

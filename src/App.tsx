@@ -13,6 +13,7 @@ import { Top } from './pages/Top';
 import { Keywords } from './pages/Keywords';
 import { TrafficBySource } from './pages/TrafficBySource';
 import { ExpiredDomains } from './pages/ExpiredDomains';
+import { LinkSelling } from './pages/LinkSelling';
 import { AuthCallback } from './pages/AuthCallback';
 
 function App() {
@@ -70,6 +71,14 @@ function App() {
                   element={
                     <PrivateRoute>
                       <ExpiredDomains />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/link-selling"
+                  element={
+                    <PrivateRoute>
+                      <LinkSelling />
                     </PrivateRoute>
                   }
                 />

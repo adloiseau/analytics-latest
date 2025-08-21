@@ -28,6 +28,7 @@ export function useSearchConsoleData(
   return useQuery(
     ['searchConsole', dimension, selectedSite, startDate, endDate, searchQuery, filterValue],
     async () => {
+      // Return empty data if not authenticated - don't throw error
       if (!isAuthenticated || !accessToken) {
         return { rows: [], chartData: [] };
       }
@@ -115,7 +116,7 @@ export function useSearchConsoleData(
       }
     },
     {
-      enabled: isInitialized && isAuthenticated && !!accessToken,
+      enabled: isInitialized, // Always enabled, but returns empty data if not authenticated
       staleTime: REFRESH_CONFIG.GSC_REFRESH_INTERVAL,
       keepPreviousData: true,
       retry: false

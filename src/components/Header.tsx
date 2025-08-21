@@ -1,8 +1,10 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Menu, Home, LogOut } from 'lucide-react';
 import { DateRangeSelector } from './DateRangeSelector';
+import { GoogleAuthButton } from './GoogleAuthButton';
 import { useFilters } from '../contexts/FilterContext';
 import { useFirebaseAuth } from '../contexts/FirebaseAuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 
 interface HeaderProps {
@@ -12,6 +14,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const { dateRange, setDateRange } = useFilters();
   const { signOut } = useFirebaseAuth();
+  const { isAuthenticated: isGoogleAuthenticated } = useAuth();
   const headerRef = useRef<HTMLDivElement>(null);
   const [isHidden, setIsHidden] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -92,12 +95,18 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             >
               <Home size={20} />
             </Link>
+            
+            {/* Google Auth Button - Always visible for optional API connection */}
+            <GoogleAuthButton compact />
+            
+            {/* Firebase Logout button - Always visible since Firebase auth is required */}
             <button
               onClick={handleLogout}
               className="p-2.5 rounded-lg bg-[#25262b] text-gray-300 hover:text-white 
                        hover:bg-[#2d2e33] active:bg-[#33343a] transition-colors
                        border border-gray-800/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
               aria-label="Logout"
+              title="Déconnexion Firebase"
             >
               <LogOut size={20} />
             </button>

@@ -145,7 +145,6 @@ export const analyticsApi = {
         previousActiveUsersHistory
       };
     } catch (error) {
-      console.error('[GA API] Error fetching analytics data:', error);
       throw error;
     }
   },

@@ -30,6 +30,14 @@ export const LoginForm: React.FC = () => {
           </div>
         )}
         
+        <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+          <p className="text-blue-400 text-sm">
+            <strong>Authentification Firebase requise</strong><br />
+            Connectez-vous avec votre compte Google autorisé pour accéder au dashboard.
+            Une fois connecté, vous pourrez optionnellement vous connecter aux APIs Google via le bouton "G\" dans le header.
+          </p>
+        </div>
+        
         <button
           onClick={handleGoogleSignIn}
           disabled={loading}
@@ -56,8 +64,15 @@ export const LoginForm: React.FC = () => {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          {loading ? 'Signing in...' : 'Sign in with Google'}
+          {loading ? 'Connexion Firebase...' : 'Se connecter avec Firebase'}
         </button>
+        
+        <div className="mt-6 text-center text-gray-400 text-sm">
+          <p>Seuls les comptes autorisés peuvent accéder au dashboard</p>
+          <p className="mt-2 text-xs">
+            L'accès aux APIs Google (Search Console & Analytics) est optionnel
+          </p>
+        </div>
       </div>
     </div>
   );

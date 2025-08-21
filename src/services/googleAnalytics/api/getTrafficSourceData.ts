@@ -10,8 +10,6 @@ export async function getTrafficSourceData(
   endDate: string
 ): Promise<{ sourceData: TrafficSourceData[], timelineData: TrafficSourceData[] }> {
   try {
-    console.log('[getTrafficSourceData] Starting data fetch...');
-    
     // Fetch current period data
     const response = await fetch(
       `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
@@ -42,27 +40,13 @@ export async function getTrafficSourceData(
     }
 
     const data = await response.json();
-    console.log('[getTrafficSourceData] Raw response:', data);
 
     // Process the data
     const sourceData = processSourceData(data);
     const timelineData = processTimelineData(data);
 
-    console.log('[getTrafficSourceData] Processed data:', {
-      totalProcessedRows: data.rowCount,
-      sourcesWithData: sourceData.length,
-      timelineDataPoints: timelineData.length
-    });
-
-    console.log('[getTrafficSourceData] Final result:', {
-      sourceDataLength: sourceData.length,
-      timelineDataLength: timelineData.length,
-      sources: sourceData
-    });
-
     return { sourceData, timelineData };
   } catch (error) {
-    console.error('Error fetching traffic source data:', error);
     throw error;
   }
 }

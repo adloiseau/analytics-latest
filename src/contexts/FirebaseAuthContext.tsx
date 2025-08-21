@@ -8,9 +8,7 @@ import {
 import { auth, googleProvider } from '../config/firebase';
 import { AUTH_CONFIG } from '../config/auth.config';
 import { useNavigate } from 'react-router-dom';
-import { googleAuthClient } from '../services/googleAuth/client';
 import { storage } from '../utils/storage';
-import { STORAGE_KEYS } from '../config/storage.config';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -35,34 +33,21 @@ export const FirebaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log('Auth state changed:', { hasUser: !!user });
       setCurrentUser(user);
       const authorized = isUserAuthorized(user);
       setIsAuthorized(authorized);
       
       if (user && authorized) {
-        // Store Firebase ID token
+        // Store Firebase ID token (separate from Google APIs tokens)
         const idToken = await user.getIdToken();
         storage.set('firebase_token', idToken);
-        
-        // Check if we need to initiate Google OAuth
-        const hasGoogleTokens = storage.get(STORAGE_KEYS.ACCESS_TOKEN);
-        const isAuthenticating = storage.get('is_authenticating');
-        const isCallback = window.location.pathname === '/auth/callback';
-        
-        console.log('Auth state:', { hasGoogleTokens, isAuthenticating, isCallback });
-        
-        if (!hasGoogleTokens && !isAuthenticating && !isCallback) {
-          console.log('Initiating Google OAuth flow');
-          storage.set('is_authenticating', 'true');
-          googleAuthClient.login();
-        }
       } else {
-        // Clean up tokens if user is not authorized
+        // Clean up Firebase token if user is not authorized
         storage.remove('firebase_token');
-        storage.remove(STORAGE_KEYS.ACCESS_TOKEN);
-        storage.remove(STORAGE_KEYS.REFRESH_TOKEN);
-        storage.remove('is_authenticating');
+        
+        if (user && !authorized) {
+          await firebaseSignOut(auth);
+        }
       }
       
       setLoading(false);
@@ -73,18 +58,20 @@ export const FirebaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const signInWithGoogle = async () => {
     try {
-      console.log('Starting Google sign in...');
+      // Configure Google provider specifically for Firebase (not for APIs)
+      googleProvider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      
       const result = await signInWithPopup(auth, googleProvider);
       
       if (!isUserAuthorized(result.user)) {
-        console.log('User not authorized, signing out');
         await firebaseSignOut(auth);
         throw new Error('Email non autorisé');
       }
       
       navigate('/');
     } catch (error: any) {
-      console.error('Sign in error:', error);
       throw new Error(error.code === 'auth/unauthorized-domain' 
         ? 'Email non autorisé' 
         : 'Échec de la connexion avec Google');
@@ -93,14 +80,16 @@ export const FirebaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const signOut = async () => {
     try {
-      console.log('Signing out...');
       await firebaseSignOut(auth);
-      googleAuthClient.logout();
       storage.remove('firebase_token');
+      
+      // Also clean up any Google APIs tokens when signing out
+      storage.remove('gsc_access_token');
+      storage.remove('gsc_refresh_token');
       storage.remove('is_authenticating');
+      
       navigate('/login');
     } catch (error) {
-      console.error('Sign out error:', error);
       throw error;
     }
   };

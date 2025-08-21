@@ -26,13 +26,11 @@ export const domainsService = {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching expired domains:', error);
         return [];
       }
 
       return data || [];
     } catch (error) {
-      console.error('Error in getExpiredDomains:', error);
       return [];
     }
   }
