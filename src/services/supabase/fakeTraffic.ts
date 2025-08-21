@@ -18,6 +18,10 @@ export const fakeTrafficService = {
         query = query.ilike('post_url', `%${filters.domain}%`);
       }
 
+      if (filters.type) {
+        query = query.eq('type', filters.type);
+      }
+
       if (filters.startDate) {
         query = query.gte('log_date', filters.startDate);
       }
@@ -59,6 +63,10 @@ export const fakeTrafficService = {
 
       if (filters.domain) {
         query = query.ilike('post_url', `%${filters.domain}%`);
+      }
+
+      if (filters.type) {
+        query = query.eq('type', filters.type);
       }
 
       if (filters.startDate) {
@@ -113,6 +121,10 @@ export const fakeTrafficService = {
         query = query.ilike('post_url', `%${filters.domain}%`);
       }
 
+      if (filters.type) {
+        query = query.eq('type', filters.type);
+      }
+
       const { data, error } = await query;
 
       if (error) {
@@ -152,6 +164,10 @@ export const fakeTrafficService = {
         query = query.ilike('post_url', `%${filters.domain}%`);
       }
 
+      if (filters.type) {
+        query = query.eq('type', filters.type);
+      }
+
       if (filters.startDate) {
         query = query.gte('log_date', filters.startDate);
       }
@@ -186,6 +202,10 @@ export const fakeTrafficService = {
 
       if (filters.query) {
         query = query.ilike('query', `%${filters.query}%`);
+      }
+
+      if (filters.type) {
+        query = query.eq('type', filters.type);
       }
 
       if (filters.startDate) {
@@ -236,6 +256,10 @@ export const fakeTrafficService = {
 
       if (filters.domain) {
         query = query.ilike('post_url', `%${filters.domain}%`);
+      }
+
+      if (filters.type) {
+        query = query.eq('type', filters.type);
       }
 
       if (filters.startDate) {
@@ -290,6 +314,48 @@ export const fakeTrafficService = {
         uniqueDomains: 0,
         dateRange: { start: '', end: '' }
       };
+    }
+  },
+
+  async getAvailableTypes(filters: FakeTrafficFilters = {}): Promise<string[]> {
+    try {
+      let query = supabaseClient
+        .from('fake_traffic')
+        .select('type');
+
+      if (filters.query) {
+        query = query.ilike('query', `%${filters.query}%`);
+      }
+
+      if (filters.domain) {
+        query = query.ilike('post_url', `%${filters.domain}%`);
+      }
+
+      if (filters.startDate) {
+        query = query.gte('log_date', filters.startDate);
+      }
+
+      if (filters.endDate) {
+        query = query.lte('log_date', filters.endDate);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error fetching available types:', error);
+        return [];
+      }
+
+      const types = Array.from(new Set(
+        (data || [])
+          .map(log => log.type)
+          .filter(type => type && type.trim().length > 0)
+      )).sort();
+
+      return types;
+    } catch (error) {
+      console.error('Error in getAvailableTypes:', error);
+      return [];
     }
   }
 };

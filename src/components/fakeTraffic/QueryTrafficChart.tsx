@@ -24,15 +24,8 @@ export const QueryTrafficChart: React.FC<QueryTrafficChartProps> = ({ filters, o
   
   const { data: queryData = [], isLoading } = useFakeTrafficQueryData(filters);
 
-  console.log('🔍 QueryTrafficChart render:', {
-    queryDataLength: queryData.length,
-    selectedQueriesLength: selectedQueries.length,
-    isLoading
-  });
-
-  // Extraire toutes les requêtes disponibles - SIMPLE
+  // Extraire toutes les requêtes disponibles
   const allQueries = React.useMemo(() => {
-    console.log('📊 Calculating allQueries from queryData:', queryData.length);
     const queries = new Set<string>();
     queryData.forEach(day => {
       Object.keys(day).forEach(key => {
@@ -41,29 +34,30 @@ export const QueryTrafficChart: React.FC<QueryTrafficChartProps> = ({ filters, o
         }
       });
     });
-    const result = Array.from(queries).sort();
-    console.log('✅ AllQueries calculated:', result.length);
-    return result;
+    return Array.from(queries).sort();
   }, [queryData]);
 
-  // Calculer les top 5 requêtes - SIMPLE
+  // Calculer les top 5 requêtes
   const top5Queries = React.useMemo(() => {
     if (allQueries.length === 0 || queryData.length === 0) return [];
     
-    console.log('🏆 Calculating top5 queries');
     const queryTotals = allQueries.map(query => {
       const total = queryData.reduce((sum, day) => sum + (day[query] || 0), 0);
       return { query, total };
     }).sort((a, b) => b.total - a.total);
     
-    const result = queryTotals.slice(0, 5).map(item => item.query);
-    console.log('✅ Top5 calculated:', result);
-    return result;
+    return queryTotals.slice(0, 5).map(item => item.query);
   }, [allQueries, queryData]);
+
+  // Initialiser avec le top 5 par défaut
+  React.useEffect(() => {
+    if (top5Queries.length > 0 && selectedQueries.length === 0) {
+      setSelectedQueries([...top5Queries]);
+    }
+  }, [top5Queries, selectedQueries.length]);
 
   // Ajouter une requête à la sélection
   const addQuery = (query: string) => {
-    console.log('➕ Adding query:', query);
     if (!selectedQueries.includes(query)) {
       setSelectedQueries([...selectedQueries, query]);
     }
@@ -72,29 +66,19 @@ export const QueryTrafficChart: React.FC<QueryTrafficChartProps> = ({ filters, o
 
   // Supprimer une requête de la sélection
   const removeQuery = (query: string) => {
-    console.log('➖ Removing query:', query);
     setSelectedQueries(selectedQueries.filter(q => q !== query));
   };
 
   // Réinitialiser à la vue globale
   const resetToGlobalView = () => {
-    console.log('🌍 Reset to global view');
     setSelectedQueries([]);
     setQueryInput('');
   };
 
   // Utiliser les top 5 par défaut
   const useTop5 = () => {
-    console.log('🔝 Using top 5 queries');
     setSelectedQueries([...top5Queries]);
   };
-
-  // Initialiser avec le top 5 par défaut
-  React.useEffect(() => {
-    if (top5Queries.length > 0 && selectedQueries.length === 0) {
-      setSelectedQueries([...top5Queries]);
-    }
-  }, [top5Queries]);
 
   // Filtrer les requêtes selon l'input
   const filteredQueries = allQueries.filter(query =>
@@ -104,17 +88,23 @@ export const QueryTrafficChart: React.FC<QueryTrafficChartProps> = ({ filters, o
 
   if (isLoading) {
     return (
-      <div className="h-[400px] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+      <div className="bg-[#25262b]/90 backdrop-blur-sm rounded-lg p-6 border border-gray-800/10">
+        <div className="h-[400px] flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+        </div>
       </div>
     );
   }
 
   if (queryData.length === 0) {
-    return <EmptyChart message="Aucune donnée de trafic disponible pour la période sélectionnée" />;
+    return (
+      <div className="bg-[#25262b]/90 backdrop-blur-sm rounded-lg p-6 border border-gray-800/10">
+        <EmptyChart message="Aucune donnée de trafic disponible pour la période sélectionnée" />
+      </div>
+    );
   }
 
-  // Préparer les données pour l'affichage - SIMPLE
+  // Préparer les données pour l'affichage
   const displayData = queryData.map(day => {
     if (selectedQueries.length === 0) {
       // Vue globale : agrégation de toutes les requêtes par jour
@@ -137,157 +127,159 @@ export const QueryTrafficChart: React.FC<QueryTrafficChartProps> = ({ filters, o
 
   const linesToDisplay = selectedQueries.length > 0 ? selectedQueries : ['Total Global'];
 
-  console.log('📈 Rendering chart with lines:', linesToDisplay);
-
   return (
-    <div className="space-y-4">
-      {/* Query Selector */}
-      <div className="flex flex-wrap items-center gap-2">
-        {/* Bouton Vue Globale */}
-        <button
-          onClick={resetToGlobalView}
-          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-            selectedQueries.length === 0
-              ? 'bg-blue-500 text-white'
-              : 'bg-[#1a1b1e] text-gray-400 hover:text-white hover:bg-[#25262b]'
-          }`}
-        >
-          Vue Globale
-        </button>
+    <div className="bg-[#25262b]/90 backdrop-blur-sm rounded-lg p-6 border border-gray-800/10">
+      <h2 className="text-lg font-semibold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-4">
+        Évolution du Trafic par Requête
+      </h2>
 
-        {/* Bouton Top 5 */}
-        <button
-          onClick={useTop5}
-          className="px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-[#1a1b1e] text-gray-400 hover:text-white hover:bg-[#25262b]"
-        >
-          Top 5
-        </button>
-        
-        <div className="flex-1 min-w-[200px]">
-          <div className="relative">
-            <input
-              type="text"
-              value={queryInput}
-              onChange={(e) => setQueryInput(e.target.value)}
-              placeholder="Tapez pour rechercher une requête..."
-              className="w-full px-3 py-2 bg-[#1a1b1e] border border-gray-700/50 rounded-lg 
-                       text-gray-200 placeholder-gray-400 text-sm
-                       focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-            />
-            
-            {queryInput && filteredQueries.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-[#1a1b1e] border border-gray-700/50 rounded-lg 
-                            shadow-xl z-20 max-h-48 overflow-y-auto">
-                {filteredQueries.slice(0, 10).map((query, index) => (
-                  <button
-                    key={index}
-                    onClick={() => addQuery(query)}
-                    className="w-full text-left px-3 py-2 text-gray-200 hover:bg-[#25262b] 
-                             transition-colors text-sm truncate flex items-center justify-between"
-                  >
-                    <span className="truncate">{query}</span>
-                    <Plus className="w-4 h-4 text-gray-400 flex-shrink-0 ml-2" />
-                  </button>
-                ))}
+      <div className="space-y-4">
+        {/* Query Selector */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Bouton Vue Globale */}
+          <button
+            onClick={resetToGlobalView}
+            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              selectedQueries.length === 0
+                ? 'bg-blue-500 text-white'
+                : 'bg-[#1a1b1e] text-gray-400 hover:text-white hover:bg-[#25262b]'
+            }`}
+          >
+            Vue Globale
+          </button>
+
+          {/* Bouton Top 5 */}
+          <button
+            onClick={useTop5}
+            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              selectedQueries.length === 5 && selectedQueries.every(q => top5Queries.includes(q))
+                ? 'bg-green-500 text-white'
+                : 'bg-[#1a1b1e] text-gray-400 hover:text-white hover:bg-[#25262b]'
+            }`}
+          >
+            Top 5
+          </button>
+          
+          <div className="flex-1 min-w-[200px]">
+            <div className="relative">
+              <input
+                type="text"
+                value={queryInput}
+                onChange={(e) => setQueryInput(e.target.value)}
+                placeholder="Tapez pour rechercher une requête..."
+                className="w-full px-3 py-2 bg-[#1a1b1e] border border-gray-700/50 rounded-lg 
+                         text-gray-200 placeholder-gray-400 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              />
+              
+              {queryInput && filteredQueries.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-[#1a1b1e] border border-gray-700/50 rounded-lg 
+                              shadow-xl z-20 max-h-48 overflow-y-auto">
+                  {filteredQueries.slice(0, 10).map((query, index) => (
+                    <button
+                      key={index}
+                      onClick={() => addQuery(query)}
+                      className="w-full text-left px-3 py-2 text-gray-200 hover:bg-[#25262b] 
+                               transition-colors text-sm truncate flex items-center justify-between"
+                    >
+                      <span className="truncate">{query}</span>
+                      <Plus className="w-4 h-4 text-gray-400 flex-shrink-0 ml-2" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Selected Queries */}
+          <div className="flex flex-wrap gap-2">
+            {selectedQueries.map((query, index) => (
+              <div
+                key={query}
+                className="flex items-center gap-1 px-2 py-1 rounded-full text-xs border"
+                style={{
+                  backgroundColor: `${QUERY_COLORS[index % QUERY_COLORS.length]}20`,
+                  borderColor: `${QUERY_COLORS[index % QUERY_COLORS.length]}50`,
+                  color: QUERY_COLORS[index % QUERY_COLORS.length]
+                }}
+              >
+                <span className="max-w-[100px] truncate">{query}</span>
+                <button
+                  onClick={() => removeQuery(query)}
+                  className="hover:bg-black/20 rounded-full p-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
               </div>
-            )}
+            ))}
           </div>
         </div>
 
-        {/* Selected Queries */}
-        <div className="flex flex-wrap gap-2">
-          {selectedQueries.map((query, index) => (
-            <div
-              key={query}
-              className="flex items-center gap-1 px-2 py-1 rounded-full text-xs border"
-              style={{
-                backgroundColor: `${QUERY_COLORS[index % QUERY_COLORS.length]}20`,
-                borderColor: `${QUERY_COLORS[index % QUERY_COLORS.length]}50`,
-                color: QUERY_COLORS[index % QUERY_COLORS.length]
-              }}
+        {/* Chart */}
+        <div className="h-[400px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart 
+              data={displayData}
+              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
             >
-              <span className="max-w-[100px] truncate">{query}</span>
-              <button
-                onClick={() => removeQuery(query)}
-                className="hover:bg-black/20 rounded-full p-0.5"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Chart */}
-      <div className="h-[400px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart 
-            data={displayData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-            onClick={(data) => {
-              if (data?.activeLabel) {
-                onDateSelect(data.activeLabel);
-              }
-            }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-            <XAxis 
-              dataKey="date"
-              stroke="#666"
-              tick={{ fill: '#666', fontSize: 12 }}
-              tickFormatter={(date) => format(parseISO(date), 'dd MMM', { locale: fr })}
-            />
-            <YAxis 
-              stroke="#666"
-              tick={{ fill: '#666', fontSize: 12 }}
-              label={{ 
-                value: 'Nombre de requêtes', 
-                angle: -90, 
-                position: 'insideLeft',
-                fill: '#666'
-              }}
-            />
-            <Tooltip
-              content={({ active, payload, label }) => {
-                if (active && payload && payload.length) {
-                  return (
-                    <div className="bg-[#1a1b1e]/95 backdrop-blur-sm p-3 rounded-lg shadow-xl border border-gray-800/50">
-                      <p className="text-gray-400 text-xs mb-2">
-                        {format(parseISO(label), 'dd MMMM yyyy', { locale: fr })}
-                      </p>
-                      {payload.map((entry: any, index: number) => (
-                        <div key={index} className="flex items-center gap-2 text-sm">
-                          <div 
-                            className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: entry.color }}
-                          />
-                          <span className="text-gray-300">{entry.name}:</span>
-                          <span className="text-white font-medium">{entry.value} requêtes</span>
-                        </div>
-                      ))}
-                      <p className="text-xs text-gray-500 mt-1">Cliquez pour voir la répartition</p>
-                    </div>
-                  );
-                }
-                return null;
-              }}
-            />
-            <Legend />
-            
-            {linesToDisplay.map((query, index) => (
-              <Line
-                key={query}
-                type="monotone"
-                dataKey={query}
-                name={query}
-                stroke={QUERY_COLORS[index % QUERY_COLORS.length]}
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4 }}
+              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+              <XAxis 
+                dataKey="date"
+                stroke="#666"
+                tick={{ fill: '#666', fontSize: 12 }}
+                tickFormatter={(date) => format(parseISO(date), 'dd MMM', { locale: fr })}
               />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
+              <YAxis 
+                stroke="#666"
+                tick={{ fill: '#666', fontSize: 12 }}
+                label={{ 
+                  value: 'Nombre de requêtes', 
+                  angle: -90, 
+                  position: 'insideLeft',
+                  fill: '#666'
+                }}
+              />
+              <Tooltip
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div className="bg-[#1a1b1e]/95 backdrop-blur-sm p-3 rounded-lg shadow-xl border border-gray-800/50">
+                        <p className="text-gray-400 text-xs mb-2">
+                          {format(parseISO(label), 'dd MMMM yyyy', { locale: fr })}
+                        </p>
+                        {payload.map((entry: any, index: number) => (
+                          <div key={index} className="flex items-center gap-2 text-sm">
+                            <div 
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: entry.color }}
+                            />
+                            <span className="text-gray-300">{entry.name}:</span>
+                            <span className="text-white font-medium">{entry.value} requêtes</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Legend />
+              
+              {linesToDisplay.map((query, index) => (
+                <Line
+                  key={query}
+                  type="monotone"
+                  dataKey={query}
+                  name={query}
+                  stroke={QUERY_COLORS[index % QUERY_COLORS.length]}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );

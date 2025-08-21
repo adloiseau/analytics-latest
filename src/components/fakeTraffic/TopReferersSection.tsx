@@ -77,6 +77,10 @@ export const TopReferersSection: React.FC<TopReferersSection> = ({ filters }) =>
     );
   }
 
+  if (referersData.length === 0) {
+    return null;
+  }
+
   return (
     <div className="bg-[#25262b]/90 backdrop-blur-sm rounded-lg p-6 border border-gray-800/10">
       <div className="flex items-center gap-2 mb-4">
@@ -131,12 +135,6 @@ export const TopReferersSection: React.FC<TopReferersSection> = ({ filters }) =>
           </div>
         ))}
       </div>
-
-      {referersData.length === 0 && (
-        <div className="text-center py-8 text-gray-400">
-          Aucun referer trouvé pour la période sélectionnée
-        </div>
-      )}
     </div>
   );
 };

@@ -13,6 +13,7 @@ export interface FakeTraffic {
 export interface FakeTrafficFilters {
   query?: string;
   domain?: string;
+  type?: string;
   startDate?: string;
   endDate?: string;
 }

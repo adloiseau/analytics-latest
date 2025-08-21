@@ -15,7 +15,7 @@ export const GSCEstimationSection: React.FC<GSCEstimationSectionProps> = ({ filt
 
   // Calculer l'estimation mensuelle basée sur les 7 derniers jours
   const monthlyEstimation = React.useMemo(() => {
-    if (!queryData || queryData.length === 0) return [];
+    if (!queryData || queryData.length === 0) return null;
 
     // Prendre les 7 derniers jours de données
     const last7Days = queryData.slice(-7);
@@ -57,12 +57,16 @@ export const GSCEstimationSection: React.FC<GSCEstimationSectionProps> = ({ filt
     );
   }
 
+  if (!monthlyEstimation) {
+    return null;
+  }
+
   return (
     <div className="bg-[#25262b]/90 backdrop-blur-sm rounded-lg p-6 border border-gray-800/10">
       <div className="flex items-center gap-2 mb-4">
         <Calculator className="w-5 h-5 text-orange-400" />
         <h2 className="text-lg font-semibold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-          Estimation mensuelle GSC
+          Estimation Google Search Console
         </h2>
       </div>
 

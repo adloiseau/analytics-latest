@@ -69,3 +69,14 @@ export const useFakeTrafficStats = (filters: FakeTrafficFilters = {}) => {
     }
   );
 };
+
+export const useFakeTrafficTypes = (filters: FakeTrafficFilters = {}) => {
+  return useQuery(
+    ['fakeTrafficTypes', filters],
+    () => fakeTrafficService.getAvailableTypes(filters),
+    {
+      staleTime: 10 * 60 * 1000, // 10 minutes
+      refetchOnWindowFocus: false
+    }
+  );
+};

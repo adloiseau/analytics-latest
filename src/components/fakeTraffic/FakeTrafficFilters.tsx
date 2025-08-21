@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Search, Globe, Calendar, X, Filter, ChevronDown } from 'lucide-react';
+import React from 'react';
+import { Search, Globe, Calendar, X, Filter, Tag } from 'lucide-react';
 import { FakeTrafficFilters } from '../../types/fakeTraffic';
-import { useFakeTrafficQueries, useFakeTrafficDomains } from '../../hooks/useFakeTraffic';
+import { useFakeTrafficQueries, useFakeTrafficDomains, useFakeTrafficTypes } from '../../hooks/useFakeTraffic';
 import { format, subDays } from 'date-fns';
 
 interface FakeTrafficFiltersProps {
@@ -17,8 +17,9 @@ export const FakeTrafficFiltersComponent: React.FC<FakeTrafficFiltersProps> = ({
 }) => {
   const { data: availableQueries = [] } = useFakeTrafficQueries();
   const { data: availableDomains = [] } = useFakeTrafficDomains();
+  const { data: availableTypes = [] } = useFakeTrafficTypes();
 
-  const hasActiveFilters = filters.query || filters.domain || filters.startDate || filters.endDate;
+  const hasActiveFilters = filters.query || filters.domain || filters.type || filters.startDate || filters.endDate;
 
   const handleQueryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     onFiltersChange({ ...filters, query: e.target.value });
@@ -26,6 +27,10 @@ export const FakeTrafficFiltersComponent: React.FC<FakeTrafficFiltersProps> = ({
 
   const handleDomainChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     onFiltersChange({ ...filters, domain: e.target.value });
+  };
+
+  const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    onFiltersChange({ ...filters, type: e.target.value });
   };
 
   const handleDateChange = (field: 'startDate' | 'endDate', value: string) => {
@@ -53,7 +58,7 @@ export const FakeTrafficFiltersComponent: React.FC<FakeTrafficFiltersProps> = ({
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Query Filter */}
         <div className="space-y-2">
           <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
@@ -93,6 +98,28 @@ export const FakeTrafficFiltersComponent: React.FC<FakeTrafficFiltersProps> = ({
             {availableDomains.map((domain, index) => (
               <option key={index} value={domain}>
                 {domain}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Type Filter */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
+            <Tag className="w-4 h-4" />
+            Type
+          </label>
+          <select
+            value={filters.type || ''}
+            onChange={handleTypeChange}
+            className="w-full px-3 py-2 bg-[#1a1b1e] border border-gray-700/50 rounded-lg 
+                     text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50
+                     appearance-none cursor-pointer"
+          >
+            <option value="">Tous les types</option>
+            {availableTypes.map((type, index) => (
+              <option key={index} value={type}>
+                {type}
               </option>
             ))}
           </select>
@@ -142,6 +169,11 @@ export const FakeTrafficFiltersComponent: React.FC<FakeTrafficFiltersProps> = ({
             {filters.domain && (
               <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">
                 Domaine: {filters.domain}
+              </span>
+            )}
+            {filters.type && (
+              <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs">
+                Type: {filters.type}
               </span>
             )}
             {filters.startDate && (
